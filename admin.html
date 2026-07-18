@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Admin Portal to add and manage locations for the Old Town Explorer map guide.">
+  <title>Admin Portal | Old Town Explorer</title>
+  
+  <!-- Leaflet.js CSS from CDN -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" 
+        crossorigin="" />
+        
+  <!-- Custom Application Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Admin Header -->
+  <header class="admin-header">
+    <h1>Old Town Explorer Admin Portal</h1>
+    <div class="admin-header-actions">
+      <a href="index.html" class="btn-secondary" id="back-to-explorer">
+        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" alt="Back Icon">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        Back to Explorer
+      </a>
+      <button id="btn-reset-data" class="btn-danger-outline" type="button">
+        Reset to Defaults
+      </button>
+    </div>
+  </header>
+
+  <!-- Admin Layout Container -->
+  <div class="admin-container">
+    
+    <!-- Left Panel: Form & Listings -->
+    <aside class="admin-sidebar">
+      
+      <!-- Add Location Form -->
+      <section class="form-section" aria-label="Add Location Form">
+        <div class="admin-form-card">
+          <h2 class="form-title">Add New Location</h2>
+          
+          <form id="add-location-form" novalidate>
+            <div class="form-group">
+              <label for="loc-name">Location Name</label>
+              <input type="text" id="loc-name" class="form-input" placeholder="e.g. Gadsby's Tavern" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="loc-type">Category</label>
+              <select id="loc-type" class="form-select" required>
+                <option value="" disabled selected>Select category...</option>
+                <option value="food">Food & Dining</option>
+                <option value="bar">Bars & Speakeasies</option>
+                <option value="experience">Historic & Unique</option>
+              </select>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label for="loc-lat">Latitude</label>
+                <input type="number" id="loc-lat" class="form-input" step="any" placeholder="38.8045" required>
+              </div>
+              <div class="form-group">
+                <label for="loc-lng">Longitude</label>
+                <input type="number" id="loc-lng" class="form-input" step="any" placeholder="-77.0425" required>
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label for="loc-desc">Description</label>
+              <textarea id="loc-desc" class="form-textarea" placeholder="Describe the atmosphere, history, or unique offerings..." required></textarea>
+            </div>
+            
+            <button type="submit" class="btn-submit">Save Location</button>
+          </form>
+        </div>
+      </section>
+
+      <!-- Active Listings Directory Table -->
+      <section class="listings-section" aria-label="Active Locations Directory Table">
+        <h2 class="listings-title">Active Locations</h2>
+        <div class="listings-table-container">
+          <table class="listings-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Category</th>
+                <th style="text-align: right;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="listings-tbody">
+              <!-- Dynamically populated rows -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+      
+    </aside>
+
+    <!-- Right Panel: Coordinate Selector Map -->
+    <main class="admin-map-area" aria-label="Coordinate Picker Map">
+      <!-- Helper Overlay Badge -->
+      <div class="map-helper-badge">
+        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" alt="Map Pin Icon">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+          <circle cx="12" cy="10" r="3"></circle>
+        </svg>
+        Click anywhere on the map to set coordinates
+      </div>
+      
+      <!-- Leaflet Map Container -->
+      <div id="admin-map" class="admin-map-container"></div>
+    </main>
+
+  </div>
+
+  <!-- Leaflet.js from CDN -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" 
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" 
+          crossorigin=""></script>
+          
+  <!-- Storage utility logic -->
+  <script src="data.js"></script>
+  
+  <!-- Admin Script -->
+  <script src="admin.js"></script>
+
+</body>
+</html>
