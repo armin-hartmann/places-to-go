@@ -14,6 +14,21 @@ function escapeHTML(str) {
   );
 }
 
+function parseCoordinatePair(value) {
+  const match = value.trim().match(
+    /^([+-]?(?:\d+(?:\.\d+)?|\.\d+))\s*,\s*([+-]?(?:\d+(?:\.\d+)?|\.\d+))$/
+  );
+
+  if (!match) return null;
+
+  const lat = Number(match[1]);
+  const lng = Number(match[2]);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+
+  return { lat, lng };
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   const authGate = document.getElementById('auth-gate');
   const adminContainer = document.getElementById('admin-container');
@@ -89,6 +104,13 @@ function initializeAdminApp(user) {
   const submitButton = document.getElementById('btn-submit');
   const cancelButton = document.getElementById('btn-cancel-edit');
   const status = document.getElementById('admin-status');
+  const coordinateInput = document.getElementById('loc-coordinates');
+  const coordinateHelp = document.getElementById('coordinate-help');
+  const coordinateHelpText = coordinateHelp.textContent;
+  const categoryFieldset = document.querySelector('.category-fieldset');
+  const categoryInputs = Array.from(document.querySelectorAll('input[name="loc-category"]'));
+  const categoryHelp = document.getElementById('category-help');
+  const categoryHelpText = categoryHelp.textContent;
   const canDelete = canDeleteLocations(user);
 
   document.getElementById('role-note').textContent = canDelete
@@ -118,15 +140,58 @@ function initializeAdminApp(user) {
     experience: { label: "Unique", color: "var(--color-experience)" }
   };
 
+  function getLocationCategories(location) {
+    if (Array.isArray(location.categories) && location.categories.length) {
+      return location.categories.filter(category => categories[category]);
+    }
+    return location.type && categories[location.type] ? [location.type] : [];
+  }
+
+  function getSelectedCategories() {
+    return categoryInputs
+      .filter(input => input.checked)
+      .map(input => input.value);
+  }
+
+  function setSelectedCategories(categoryValues) {
+    const selected = new Set(categoryValues);
+    categoryInputs.forEach(input => {
+      input.checked = selected.has(input.value);
+    });
+  }
+
+  function setCategoryFeedback(message = categoryHelpText, state = '') {
+    categoryHelp.textContent = message;
+    categoryHelp.classList.toggle('form-help-success', state === 'success');
+    categoryHelp.classList.toggle('form-help-error', state === 'error');
+    categoryFieldset.toggleAttribute('aria-invalid', state === 'error');
+  }
+
+  function createCategoryBackground(categoryValues) {
+    const validCategories = categoryValues.filter(category => categories[category]);
+    if (validCategories.length <= 1) {
+      return `var(--color-${validCategories[0] || 'experience'})`;
+    }
+
+    const segmentSize = 100 / validCategories.length;
+    const stops = validCategories.flatMap((category, index) => {
+      const start = (index * segmentSize).toFixed(2);
+      const end = ((index + 1) * segmentSize).toFixed(2);
+      const color = `var(--color-${category})`;
+      return [`${color} ${start}%`, `${color} ${end}%`];
+    });
+    return `linear-gradient(135deg, ${stops.join(', ')})`;
+  }
+
   function setStatus(message = '', isError = false) {
     status.textContent = message;
     status.classList.toggle('form-status-error', isError);
   }
 
-  function createCustomIcon(type, isActive = false) {
-    const colorVar = `var(--color-${type})`;
+  function createCustomIcon(categoryValues, isActive = false) {
+    const markerBackground = createCategoryBackground(categoryValues);
     const pulseHtml = isActive
-      ? `<div class="marker-pulse" style="--marker-color: ${colorVar};"></div>`
+      ? `<div class="marker-pulse" style="--marker-background: ${markerBackground};"></div>`
       : '';
 
     return L.divIcon({
@@ -134,7 +199,7 @@ function initializeAdminApp(user) {
       html: `
         <div class="marker-dot-wrapper">
           ${pulseHtml}
-          <div class="marker-dot" style="--marker-color: ${colorVar};"></div>
+          <div class="marker-dot" style="--marker-background: ${markerBackground};"></div>
         </div>
       `,
       iconSize: [44, 44],
@@ -158,17 +223,20 @@ function initializeAdminApp(user) {
 
       locations.forEach(loc => {
         const tr = document.createElement('tr');
-        const catMeta = categories[loc.type] || {
-          label: loc.type,
-          color: 'var(--color-all)'
-        };
+        const locationCategories = getLocationCategories(loc);
+        const categoryMarkup = locationCategories.map(category => {
+          const catMeta = categories[category];
+          return `
+            <span style="color: ${catMeta.color}; font-weight: 600;">
+              ${escapeHTML(catMeta.label)}
+            </span>
+          `;
+        }).join('');
 
         tr.innerHTML = `
           <td class="location-name">${escapeHTML(loc.name)}</td>
           <td>
-            <span style="color: ${catMeta.color}; font-weight: 600;">
-              ${escapeHTML(catMeta.label)}
-            </span>
+            <span class="table-category-list">${categoryMarkup}</span>
           </td>
           <td>
             <span class="status-badge ${loc.published ? 'status-published' : 'status-draft'}">
@@ -212,10 +280,13 @@ function initializeAdminApp(user) {
         tbody.appendChild(tr);
 
         const popup = document.createElement('div');
-        popup.innerHTML = `<b>${escapeHTML(loc.name)}</b><br><span class="marker-category">${escapeHTML(catMeta.label)}</span>`;
+        const categoryLabels = locationCategories
+          .map(category => categories[category].label)
+          .join(' · ');
+        popup.innerHTML = `<b>${escapeHTML(loc.name)}</b><br><span class="marker-category">${escapeHTML(categoryLabels)}</span>`;
         activeMarkersGroup.addLayer(
           L.marker([loc.lat, loc.lng], {
-            icon: createCustomIcon(loc.type)
+            icon: createCustomIcon(locationCategories)
           }).bindPopup(popup)
         );
       });
@@ -227,20 +298,35 @@ function initializeAdminApp(user) {
     }
   }
 
+  function setCoordinateFeedback(message = coordinateHelpText, state = '') {
+    coordinateHelp.textContent = message;
+    coordinateHelp.classList.toggle('form-help-success', state === 'success');
+    coordinateHelp.classList.toggle('form-help-error', state === 'error');
+  }
+
   function setFormCoordinates(lat, lng) {
-    document.getElementById('loc-lat').value = lat.toFixed(6);
-    document.getElementById('loc-lng').value = lng.toFixed(6);
+    coordinateInput.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+    coordinateInput.setCustomValidity('');
+    coordinateInput.removeAttribute('aria-invalid');
+    setCoordinateFeedback('Coordinates set on the map.', 'success');
   }
 
   function placeOrMovePicker(lat, lng) {
+    const selectedCategories = getSelectedCategories();
+    const pickerCategories = selectedCategories.length
+      ? selectedCategories
+      : ['experience'];
+    const pickerIcon = createCustomIcon(pickerCategories, true);
+
     if (pickerMarker) {
       pickerMarker.setLatLng([lat, lng]);
+      pickerMarker.setIcon(pickerIcon);
       return;
     }
 
     pickerMarker = L.marker([lat, lng], {
       draggable: true,
-      icon: createCustomIcon('experience', true)
+      icon: pickerIcon
     }).addTo(map);
 
     pickerMarker.on('drag', () => {
@@ -262,9 +348,12 @@ function initializeAdminApp(user) {
     submitButton.textContent = "Update Location";
     cancelButton.hidden = false;
     document.getElementById('loc-name').value = loc.name;
-    document.getElementById('loc-type').value = loc.type;
-    document.getElementById('loc-lat').value = loc.lat;
-    document.getElementById('loc-lng').value = loc.lng;
+    setSelectedCategories(getLocationCategories(loc));
+    setCategoryFeedback();
+    coordinateInput.value = `${loc.lat}, ${loc.lng}`;
+    coordinateInput.setCustomValidity('');
+    coordinateInput.removeAttribute('aria-invalid');
+    setCoordinateFeedback();
     document.getElementById('loc-desc').value = loc.desc;
     document.getElementById('loc-published').checked = loc.published;
     setStatus('');
@@ -281,11 +370,58 @@ function initializeAdminApp(user) {
     cancelButton.hidden = true;
     form.reset();
     document.getElementById('loc-published').checked = true;
+    setCategoryFeedback();
+    coordinateInput.setCustomValidity('');
+    coordinateInput.removeAttribute('aria-invalid');
+    setCoordinateFeedback();
     clearPicker();
     setStatus('');
   }
 
   cancelButton.addEventListener('click', cancelEditMode);
+
+  categoryInputs.forEach(input => {
+    input.addEventListener('change', () => {
+      const selectedCategories = getSelectedCategories();
+      if (selectedCategories.length) {
+        setCategoryFeedback(
+          `${selectedCategories.length} ${selectedCategories.length === 1 ? 'category' : 'categories'} selected.`,
+          'success'
+        );
+        if (pickerMarker) {
+          pickerMarker.setIcon(createCustomIcon(selectedCategories, true));
+        }
+      } else {
+        setCategoryFeedback('Select at least one category.', 'error');
+      }
+    });
+  });
+
+  coordinateInput.addEventListener('input', () => {
+    const coordinates = parseCoordinatePair(coordinateInput.value);
+
+    if (!coordinateInput.value.trim()) {
+      coordinateInput.setCustomValidity('');
+      coordinateInput.removeAttribute('aria-invalid');
+      setCoordinateFeedback();
+      return;
+    }
+
+    if (!coordinates) {
+      coordinateInput.setCustomValidity(
+        'Enter latitude and longitude separated by a comma. Latitude must be between -90 and 90; longitude between -180 and 180.'
+      );
+      coordinateInput.setAttribute('aria-invalid', 'true');
+      setCoordinateFeedback('Use latitude, longitude—for example: 38.8045, -77.0591.', 'error');
+      return;
+    }
+
+    coordinateInput.setCustomValidity('');
+    coordinateInput.removeAttribute('aria-invalid');
+    setCoordinateFeedback('Coordinates recognized and placed on the map.', 'success');
+    placeOrMovePicker(coordinates.lat, coordinates.lng);
+    map.setView([coordinates.lat, coordinates.lng], 16, { animate: true });
+  });
 
   map.on('click', event => {
     const { lat, lng } = event.latlng;
@@ -296,18 +432,38 @@ function initializeAdminApp(user) {
   form.addEventListener('submit', async event => {
     event.preventDefault();
     const name = document.getElementById('loc-name').value.trim();
-    const type = document.getElementById('loc-type').value;
-    const lat = Number(document.getElementById('loc-lat').value);
-    const lng = Number(document.getElementById('loc-lng').value);
+    const selectedCategories = getSelectedCategories();
+    const coordinates = parseCoordinatePair(coordinateInput.value);
     const desc = document.getElementById('loc-desc').value.trim();
     const published = document.getElementById('loc-published').checked;
     const wasEditing = Boolean(editingLocationId);
 
+    if (!selectedCategories.length) {
+      setCategoryFeedback('Select at least one category.', 'error');
+      setStatus('Select at least one category before saving.', true);
+      categoryInputs[0].focus();
+      return;
+    }
+
+    if (!coordinates) {
+      coordinateInput.reportValidity();
+      setStatus('Enter valid coordinates before saving.', true);
+      return;
+    }
+
+    const { lat, lng } = coordinates;
     submitButton.disabled = true;
     setStatus(wasEditing ? 'Updating location…' : 'Saving location…');
 
     try {
-      const location = { name, type, lat, lng, desc, published };
+      const location = {
+        name,
+        categories: selectedCategories,
+        lat,
+        lng,
+        desc,
+        published
+      };
       if (wasEditing) {
         await updateStoredLocation(editingLocationId, location);
       } else {

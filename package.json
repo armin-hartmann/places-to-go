@@ -1,11 +1,11 @@
 {
-  "name": "old-town-explorer",
+  "name": "brick-and-river",
   "version": "1.0.0",
   "private": true,
-  "description": "PocketBase-backed interactive guide to Old Town Alexandria.",
+  "description": "PocketBase-backed Brick & River guide to Old Town Alexandria.",
   "scripts": {
     "build": "node scripts/build-public.mjs",
-    "check": "node --check app.js && node --check admin.js && node --check data.js && node --check config.js && node --check scripts/build-public.mjs"
+    "check": "node --check app.js && node --check admin.js && node --check data.js && node --check config.js && node --check scripts/build-public.mjs && node --check pb_migrations/*.js"
   },
   "dependencies": {
     "pocketbase": "0.27.0"

@@ -232,7 +232,7 @@ body {
   top: 0;
   bottom: 0;
   width: 4px;
-  background-color: var(--accent-color, var(--color-all));
+  background: var(--accent-background, var(--color-all));
 }
 
 .directory-item-header {
@@ -247,6 +247,13 @@ body {
   font-weight: 600;
   font-size: 1rem;
   color: var(--text-primary);
+}
+
+.directory-item-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.3rem;
 }
 
 .directory-item-badge {
@@ -391,7 +398,7 @@ body {
 .marker-dot {
   width: 22px;
   height: 22px;
-  background-color: var(--marker-color);
+  background: var(--marker-background);
   border: 3px solid #ffffff;
   border-radius: 50%;
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.3);
@@ -410,7 +417,7 @@ body {
   position: absolute;
   width: 38px;
   height: 38px;
-  background-color: var(--marker-color);
+  background: var(--marker-background);
   opacity: 0.3;
   border-radius: 50%;
   animation: pulse-ring 2.2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
@@ -726,6 +733,65 @@ body {
   font-weight: 500;
   color: var(--text-secondary);
 }
+.category-fieldset {
+  border: 0;
+}
+.category-fieldset legend {
+  margin-bottom: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+.category-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.category-option {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color 0.2s, background-color 0.2s, color 0.2s;
+}
+.category-option:hover {
+  border-color: #cbd5e1;
+  color: var(--text-primary);
+}
+.category-option:has(input:checked) {
+  border-color: var(--text-primary);
+  background: var(--btn-active-bg);
+  color: var(--btn-active-text);
+}
+.category-option input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+.category-option:has(input:focus-visible) {
+  outline: 3px solid #f59e0b;
+  outline-offset: 3px;
+}
+.form-help {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+.form-help-success {
+  color: #047857;
+}
+.form-help-error {
+  color: #b91c1c;
+}
 .form-row {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -907,6 +973,12 @@ button:disabled {
 .marker-category {
   color: #64748b;
   font-size: 0.8rem;
+}
+
+.table-category-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.6rem;
 }
 
 .btn-delete {

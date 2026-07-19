@@ -1,5 +1,5 @@
 /**
- * PocketBase client and location data service for Old Town Explorer.
+ * PocketBase client and location data service for Brick & River.
  */
 const LOCATION_TYPES = new Set(['food', 'bar', 'experience']);
 const LOCATION_LIMITS = Object.freeze({
@@ -17,7 +17,16 @@ function normalizeLocationInput(location) {
   }
 
   const name = typeof location.name === 'string' ? location.name.trim() : '';
-  const type = typeof location.type === 'string' ? location.type.trim() : '';
+  const rawCategories = Array.isArray(location.categories)
+    ? location.categories
+    : typeof location.type === 'string'
+      ? [location.type]
+      : [];
+  const categories = [...new Set(
+    rawCategories.map(category => (
+      typeof category === 'string' ? category.trim() : ''
+    ))
+  )];
   const desc = typeof location.desc === 'string' ? location.desc.trim() : '';
   const lat = typeof location.lat === 'number'
     ? location.lat
@@ -33,8 +42,12 @@ function normalizeLocationInput(location) {
   if (!name || name.length > LOCATION_LIMITS.name) {
     throw new Error(`Location name must be between 1 and ${LOCATION_LIMITS.name} characters.`);
   }
-  if (!LOCATION_TYPES.has(type)) {
-    throw new Error("Location category is invalid.");
+  if (
+    categories.length === 0 ||
+    categories.length > LOCATION_TYPES.size ||
+    categories.some(category => !LOCATION_TYPES.has(category))
+  ) {
+    throw new Error("Select at least one valid location category.");
   }
   if (!desc || desc.length > LOCATION_LIMITS.description) {
     throw new Error(`Description must be between 1 and ${LOCATION_LIMITS.description} characters.`);
@@ -48,7 +61,7 @@ function normalizeLocationInput(location) {
 
   return {
     name,
-    type,
+    categories,
     lat,
     lng,
     desc,
@@ -60,10 +73,16 @@ function normalizeLocationInput(location) {
 }
 
 function mapPlaceRecord(record) {
+  const categories = Array.isArray(record.categories) && record.categories.length
+    ? record.categories
+    : typeof record.type === 'string' && record.type
+      ? [record.type]
+      : [];
+
   return {
     id: record.id,
     name: record.name,
-    type: record.type,
+    categories,
     lat: record.location?.lat,
     lng: record.location?.lon,
     desc: record.description,
@@ -77,7 +96,7 @@ function locationToRecordData(location, { includeOwner = false } = {}) {
   const normalized = normalizeLocationInput(location);
   const data = {
     name: normalized.name,
-    type: normalized.type,
+    categories: normalized.categories,
     location: {
       lat: normalized.lat,
       lon: normalized.lng

@@ -1,5 +1,5 @@
 /**
- * Runtime configuration for Old Town Explorer.
+ * Runtime configuration for Brick & River.
  *
  * The production build is designed to be served by PocketBase, so the API
  * defaults to the current origin. A separately hosted frontend can define

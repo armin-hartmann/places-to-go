@@ -1,5 +1,5 @@
 /**
- * Old Town Explorer - Interactive Directory Map
+ * Brick & River - Interactive Directory Map
  * Logic for initializing the map, placing markers, handling filters, and layout toggles.
  */
 
@@ -65,18 +65,43 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   };
 
+  function getLocationCategories(location) {
+    if (Array.isArray(location.categories) && location.categories.length) {
+      return location.categories.filter(category => categories[category]);
+    }
+    return location.type && categories[location.type] ? [location.type] : [];
+  }
+
+  function createCategoryBackground(categoryValues) {
+    const validCategories = categoryValues.filter(category => categories[category]);
+    if (validCategories.length <= 1) {
+      return `var(--color-${validCategories[0] || 'all'})`;
+    }
+
+    const segmentSize = 100 / validCategories.length;
+    const stops = validCategories.flatMap((category, index) => {
+      const start = (index * segmentSize).toFixed(2);
+      const end = ((index + 1) * segmentSize).toFixed(2);
+      const color = `var(--color-${category})`;
+      return [`${color} ${start}%`, `${color} ${end}%`];
+    });
+    return `linear-gradient(135deg, ${stops.join(', ')})`;
+  }
+
   // 2. Custom Marker Icon Creator
-  function createMarkerIcon(type, isActive = false) {
-    const colorVar = `var(--color-${type})`;
+  function createMarkerIcon(categoryValues, isActive = false) {
+    const markerBackground = createCategoryBackground(categoryValues);
     // Use motion only to communicate the currently selected location.
-    const pulseHtml = isActive ? `<div class="marker-pulse" style="--marker-color: ${colorVar};"></div>` : '';
+    const pulseHtml = isActive
+      ? `<div class="marker-pulse" style="--marker-background: ${markerBackground};"></div>`
+      : '';
 
     return L.divIcon({
       className: `custom-marker ${isActive ? 'active' : ''}`,
       html: `
         <div class="marker-dot-wrapper">
           ${pulseHtml}
-          <div class="marker-dot" style="--marker-color: ${colorVar};"></div>
+          <div class="marker-dot" style="--marker-background: ${markerBackground};"></div>
         </div>
       `,
       iconSize: [44, 44],
@@ -110,6 +135,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Pre-create markers and cache them
   activeLocations.forEach(loc => {
+    const locationCategories = getLocationCategories(loc);
     // Generate custom popup content safely escaping user text
     const popupContent = document.createElement('div');
     popupContent.innerHTML = `
@@ -119,17 +145,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Create marker
     const marker = L.marker([loc.lat, loc.lng], {
-      icon: createMarkerIcon(loc.type)
+      icon: createMarkerIcon(locationCategories)
     }).bindPopup(popupContent);
 
     // Track active state in popup open/close to update marker visual state
     marker.on('popupopen', () => {
-      marker.setIcon(createMarkerIcon(loc.type, true));
+      marker.setIcon(createMarkerIcon(locationCategories, true));
       highlightDirectoryItem(loc.id);
     });
 
     marker.on('popupclose', () => {
-      marker.setIcon(createMarkerIcon(loc.type, false));
+      marker.setIcon(createMarkerIcon(locationCategories, false));
       clearDirectoryItemHighlight(loc.id);
     });
 
@@ -144,7 +170,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     directoryList.innerHTML = '';
 
     // Filter matching data
-    const filteredLocations = activeLocations.filter(loc => filterType === 'all' || loc.type === filterType);
+    const filteredLocations = activeLocations.filter(loc => (
+      filterType === 'all' || getLocationCategories(loc).includes(filterType)
+    ));
 
     if (filteredLocations.length === 0) {
       const emptyLi = document.createElement('li');
@@ -155,6 +183,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     filteredLocations.forEach(loc => {
+      const locationCategories = getLocationCategories(loc);
       // Add marker to map
       const marker = markerCache.get(loc.id);
       if (marker) {
@@ -168,16 +197,21 @@ document.addEventListener('DOMContentLoaded', async () => {
       item.type = 'button';
       item.className = 'directory-item';
       item.dataset.id = loc.id;
-      item.style.setProperty('--accent-color', `var(--color-${loc.type})`);
+      item.style.setProperty('--accent-background', createCategoryBackground(locationCategories));
 
-      const catMeta = categories[loc.type] || { label: loc.type, bg: '#f1f5f9', text: '#334155' };
+      const categoryBadges = locationCategories.map(category => {
+        const catMeta = categories[category];
+        return `
+          <span class="directory-item-badge" style="--badge-bg: ${catMeta.bg}; --badge-color: ${catMeta.text};">
+            ${escapeHTML(catMeta.label)}
+          </span>
+        `;
+      }).join('');
 
       item.innerHTML = `
         <div class="directory-item-header">
           <span class="directory-item-title">${escapeHTML(loc.name)}</span>
-          <span class="directory-item-badge" style="--badge-bg: ${catMeta.bg}; --badge-color: ${catMeta.text};">
-            ${escapeHTML(catMeta.label)}
-          </span>
+          <span class="directory-item-badges">${categoryBadges}</span>
         </div>
         <p class="directory-item-desc">${escapeHTML(loc.desc)}</p>
       `;
@@ -215,7 +249,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         item.setAttribute('aria-current', 'true');
         const match = activeLocations.find(location => location.id === id);
         if (match) {
-          item.style.borderColor = `var(--color-${match.type})`;
+          const primaryCategory = getLocationCategories(match)[0] || 'all';
+          item.style.borderColor = `var(--color-${primaryCategory})`;
         }
         item.style.boxShadow = 'var(--shadow-md)';
         // Scroll list item into view smoothly if not visible
@@ -259,7 +294,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (filterValue !== 'all') {
         const bounds = [];
         activeLocations.forEach(loc => {
-          if (loc.type === filterValue) {
+          if (getLocationCategories(loc).includes(filterValue)) {
             bounds.push([loc.lat, loc.lng]);
           }
         });

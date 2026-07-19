@@ -1,6 +1,6 @@
-# Old Town Explorer
+# Brick & River
 
-An interactive Old Town Alexandria guide backed by PocketBase. Public visitors can browse published places; authenticated editors and administrators can manage the directory.
+An interactive Old Town Alexandria guide named for the city’s historic brick streets and Potomac waterfront. Public visitors can browse published places; authenticated editors and administrators can manage the PocketBase-backed directory.
 
 ## Local setup
 

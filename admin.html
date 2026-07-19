@@ -3,21 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Secure admin portal for managing Old Town Explorer locations.">
+  <meta name="description" content="Secure admin portal for managing Brick & River locations.">
   <meta name="theme-color" content="#0f172a">
-  <title>Admin Portal | Old Town Explorer</title>
+  <title>Admin Portal | Brick & River</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
         crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=6">
+  <link rel="stylesheet" href="styles.css?v=8">
 </head>
 <body class="admin-page">
 
   <header class="admin-header">
-    <h1>Old Town Explorer Admin Portal</h1>
+    <h1>Brick &amp; River Admin Portal</h1>
     <div class="admin-header-actions">
       <span id="auth-user" class="auth-user" hidden></span>
       <button id="btn-logout" class="btn-secondary" type="button" hidden>Sign out</button>
@@ -64,25 +64,41 @@
               <input type="text" id="loc-name" class="form-input" placeholder="e.g. Gadsby's Tavern" maxlength="120" required>
             </div>
 
-            <div class="form-group">
-              <label for="loc-type">Category</label>
-              <select id="loc-type" class="form-select" required>
-                <option value="" disabled selected>Select category...</option>
-                <option value="food">Food & Dining</option>
-                <option value="bar">Bars & Speakeasies</option>
-                <option value="experience">Historic & Unique</option>
-              </select>
-            </div>
+            <fieldset class="form-group category-fieldset" aria-describedby="category-help">
+              <legend>Categories</legend>
+              <div class="category-options">
+                <label class="category-option">
+                  <input type="checkbox" name="loc-category" value="food">
+                  <span class="badge-dot food" aria-hidden="true"></span>
+                  <span>Food & Dining</span>
+                </label>
+                <label class="category-option">
+                  <input type="checkbox" name="loc-category" value="bar">
+                  <span class="badge-dot bar" aria-hidden="true"></span>
+                  <span>Bars & Speakeasies</span>
+                </label>
+                <label class="category-option">
+                  <input type="checkbox" name="loc-category" value="experience">
+                  <span class="badge-dot experience" aria-hidden="true"></span>
+                  <span>Historic & Unique</span>
+                </label>
+              </div>
+              <small id="category-help" class="form-help">Select one or more categories.</small>
+            </fieldset>
 
-            <div class="form-row">
-              <div class="form-group">
-                <label for="loc-lat">Latitude</label>
-                <input type="number" id="loc-lat" class="form-input" step="any" min="-90" max="90" placeholder="38.8045" required>
-              </div>
-              <div class="form-group">
-                <label for="loc-lng">Longitude</label>
-                <input type="number" id="loc-lng" class="form-input" step="any" min="-180" max="180" placeholder="-77.0425" required>
-              </div>
+            <div class="form-group">
+              <label for="loc-coordinates">Coordinates</label>
+              <input
+                type="text"
+                id="loc-coordinates"
+                class="form-input"
+                inputmode="decimal"
+                autocomplete="off"
+                spellcheck="false"
+                placeholder="38.80456652599687, -77.05910094842396"
+                aria-describedby="coordinate-help"
+                required>
+              <small id="coordinate-help" class="form-help">Paste latitude, longitude from Google Maps—or click the map.</small>
             </div>
 
             <div class="form-group">
@@ -145,7 +161,7 @@
           crossorigin=""></script>
   <script src="vendor/pocketbase.umd.js"></script>
   <script src="config.js?v=1"></script>
-  <script src="data.js?v=6"></script>
-  <script src="admin.js?v=6"></script>
+  <script src="data.js?v=8"></script>
+  <script src="admin.js?v=8"></script>
 </body>
 </html>
