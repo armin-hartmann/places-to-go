@@ -6,7 +6,7 @@
 // Simple HTML escaping helper to prevent XSS
 function escapeHTML(str) {
   if (typeof str !== 'string') return str;
-  return str.replace(/[&<>'"]/g, 
+  return str.replace(/[&<>'"]/g,
     tag => ({
       '&': '&amp;',
       '<': '&lt;',
@@ -21,31 +21,31 @@ document.addEventListener('DOMContentLoaded', () => {
   // 1. Initialize Map
   const alexandriaCenter = [38.8045, -77.0425];
   const defaultZoom = 15;
-  
+
   // Create map, disable default zoom controls (we place custom ones)
   const map = L.map('map', {
     zoomControl: false,
     tap: false // Disable tap handler to prevent issues on touch devices
   }).setView(alexandriaCenter, defaultZoom);
-  
+
   // Add clean light Voyager tile layer
   L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
     subdomains: 'abcd',
     maxZoom: 20
   }).addTo(map);
-  
+
   // Add zoom control at top-right
   L.control.zoom({
     position: 'topright'
   }).addTo(map);
-  
+
   // Group layer for managing visible markers
   const markerGroup = L.layerGroup().addTo(map);
-  
-  // Global cache of markers mapped to location name for quick lookup
+
+  // Global cache of markers mapped to stable location IDs for quick lookup
   const markerCache = new Map();
-  
+
   // Category mapping metadata
   const categories = {
     food: {
@@ -64,13 +64,13 @@ document.addEventListener('DOMContentLoaded', () => {
       text: "#0f766e", // Dark teal
     }
   };
-  
+
   // 2. Custom Marker Icon Creator
   function createMarkerIcon(type, isActive = false) {
     const colorVar = `var(--color-${type})`;
     // Include a pulse animation only for "experience/unique" locations or when active
     const pulseHtml = (type === 'experience' || isActive) ? `<div class="marker-pulse" style="--marker-color: ${colorVar};"></div>` : '';
-    
+
     return L.divIcon({
       className: `custom-marker ${isActive ? 'active' : ''}`,
       html: `
@@ -90,9 +90,9 @@ document.addEventListener('DOMContentLoaded', () => {
     console.error("Storage layer not loaded. Please make sure data.js is included before app.js.");
     return;
   }
-  
+
   const activeLocations = getStoredLocations();
-  
+
   // Pre-create markers and cache them
   activeLocations.forEach(loc => {
     // Generate custom popup content safely escaping user text
@@ -101,36 +101,36 @@ document.addEventListener('DOMContentLoaded', () => {
       <h3>${escapeHTML(loc.name)}</h3>
       <p>${escapeHTML(loc.desc)}</p>
     `;
-    
+
     // Create marker
     const marker = L.marker([loc.lat, loc.lng], {
       icon: createMarkerIcon(loc.type)
     }).bindPopup(popupContent);
-    
+
     // Track active state in popup open/close to update marker visual state
     marker.on('popupopen', () => {
       marker.setIcon(createMarkerIcon(loc.type, true));
-      highlightDirectoryItem(loc.name);
+      highlightDirectoryItem(loc.id);
     });
-    
+
     marker.on('popupclose', () => {
       marker.setIcon(createMarkerIcon(loc.type, false));
-      clearDirectoryItemHighlight(loc.name);
+      clearDirectoryItemHighlight(loc.id);
     });
-    
-    markerCache.set(loc.name, marker);
+
+    markerCache.set(loc.id, marker);
   });
-  
+
   // 4. Render Directory and Map Markers
   function renderExplorer(filterType = 'all') {
     // Clear active map markers and list
     markerGroup.clearLayers();
     const directoryList = document.getElementById('directory-list');
     directoryList.innerHTML = '';
-    
+
     // Filter matching data
     const filteredLocations = activeLocations.filter(loc => filterType === 'all' || loc.type === filterType);
-    
+
     if (filteredLocations.length === 0) {
       const emptyLi = document.createElement('li');
       emptyLi.className = 'directory-empty';
@@ -138,22 +138,25 @@ document.addEventListener('DOMContentLoaded', () => {
       directoryList.appendChild(emptyLi);
       return;
     }
-    
+
     filteredLocations.forEach(loc => {
       // Add marker to map
-      const marker = markerCache.get(loc.name);
+      const marker = markerCache.get(loc.id);
       if (marker) {
         markerGroup.addLayer(marker);
       }
-      
-      // Create sidebar item
-      const item = document.createElement('li');
+
+      // Use a real button inside the list item so keyboard users can select a place.
+      const listItem = document.createElement('li');
+      listItem.className = 'directory-list-entry';
+      const item = document.createElement('button');
+      item.type = 'button';
       item.className = 'directory-item';
-      item.dataset.name = loc.name;
+      item.dataset.id = loc.id;
       item.style.setProperty('--accent-color', `var(--color-${loc.type})`);
-      
+
       const catMeta = categories[loc.type] || { label: loc.type, bg: '#f1f5f9', text: '#334155' };
-      
+
       item.innerHTML = `
         <div class="directory-item-header">
           <span class="directory-item-title">${escapeHTML(loc.name)}</span>
@@ -163,7 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
         <p class="directory-item-desc">${escapeHTML(loc.desc)}</p>
       `;
-      
+
       // Clicking list item flies to location and opens popup
       item.addEventListener('click', () => {
         if (marker) {
@@ -172,28 +175,30 @@ document.addEventListener('DOMContentLoaded', () => {
             animate: true,
             duration: 0.8
           });
-          
+
           // Open popup after transition starts/completes
           setTimeout(() => {
             marker.openPopup();
           }, 200);
-          
+
           // Close drawer on mobile for seamless map focusing
           closeSidebar();
         }
       });
-      
-      directoryList.appendChild(item);
+
+      listItem.appendChild(item);
+      directoryList.appendChild(listItem);
     });
   }
-  
+
   // 5. Sidebar Directory Selection Highlights
-  function highlightDirectoryItem(name) {
+  function highlightDirectoryItem(id) {
     const items = document.querySelectorAll('.directory-item');
     items.forEach(item => {
-      if (item.dataset.name === name) {
+      if (item.dataset.id === id) {
         item.classList.add('active');
-        const match = activeLocations.find(l => l.name === name);
+        item.setAttribute('aria-current', 'true');
+        const match = activeLocations.find(location => location.id === id);
         if (match) {
           item.style.borderColor = `var(--color-${match.type})`;
         }
@@ -202,33 +207,39 @@ document.addEventListener('DOMContentLoaded', () => {
         item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       } else {
         item.classList.remove('active');
+        item.removeAttribute('aria-current');
         item.style.borderColor = '';
         item.style.boxShadow = '';
       }
     });
   }
-  
-  function clearDirectoryItemHighlight(name) {
-    const item = document.querySelector(`.directory-item[data-name="${CSS.escape(name)}"]`);
+
+  function clearDirectoryItemHighlight(id) {
+    const item = document.querySelector(`.directory-item[data-id="${CSS.escape(id)}"]`);
     if (item) {
       item.classList.remove('active');
+      item.removeAttribute('aria-current');
       item.style.borderColor = '';
       item.style.boxShadow = '';
     }
   }
-  
+
   // 6. Filter Buttons Interaction
   const filterButtons = document.querySelectorAll('.filter-btn');
   filterButtons.forEach(btn => {
     btn.addEventListener('click', (e) => {
       // Remove active state
-      filterButtons.forEach(b => b.classList.remove('active'));
+      filterButtons.forEach(button => {
+        button.classList.remove('active');
+        button.setAttribute('aria-pressed', 'false');
+      });
       // Add active state to clicked button
       btn.classList.add('active');
-      
+      btn.setAttribute('aria-pressed', 'true');
+
       const filterValue = btn.dataset.filter;
       renderExplorer(filterValue);
-      
+
       // Fit bounds if user filters and we have markers (except 'all' which resets to original view)
       if (filterValue !== 'all') {
         const bounds = [];
@@ -250,20 +261,88 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   });
-  
+
   // 7. Mobile Sidebar Drawer Logic
   const appContainer = document.querySelector('.app-container');
   const menuToggle = document.getElementById('menu-toggle');
   const overlay = document.getElementById('sidebar-overlay');
-  
+  const sidebar = document.getElementById('explorer-sidebar');
+  const mapArea = document.querySelector('.map-area');
+  const mobileQuery = window.matchMedia('(max-width: 768px)');
+
+  function updateMapSize() {
+    window.setTimeout(() => map.invalidateSize({ animate: false }), 360);
+  }
+
+  function setFocusableState(container, isEnabled) {
+    const focusableElements = container.querySelectorAll(
+      'a, button, input, select, textarea, [tabindex]'
+    );
+
+    focusableElements.forEach(element => {
+      if (!isEnabled) {
+        if (!element.hasAttribute('data-previous-tabindex')) {
+          element.dataset.previousTabindex = element.getAttribute('tabindex') || '';
+        }
+        element.setAttribute('tabindex', '-1');
+      } else if (element.hasAttribute('data-previous-tabindex')) {
+        const previousTabindex = element.dataset.previousTabindex;
+        if (previousTabindex) {
+          element.setAttribute('tabindex', previousTabindex);
+        } else {
+          element.removeAttribute('tabindex');
+        }
+        delete element.dataset.previousTabindex;
+      }
+    });
+  }
+
+  function syncSidebarAccessibility(isOpen) {
+    const isMobile = mobileQuery.matches;
+    const drawerIsOpen = isMobile && isOpen;
+
+    menuToggle.setAttribute('aria-expanded', String(drawerIsOpen));
+    menuToggle.setAttribute(
+      'aria-label',
+      drawerIsOpen ? 'Close location directory' : 'Open location directory'
+    );
+    overlay.setAttribute('aria-hidden', String(!drawerIsOpen));
+
+    if (isMobile) {
+      sidebar.setAttribute('aria-hidden', String(!drawerIsOpen));
+      sidebar.toggleAttribute('inert', !drawerIsOpen);
+      mapArea.toggleAttribute('inert', drawerIsOpen);
+      setFocusableState(sidebar, drawerIsOpen);
+      setFocusableState(mapArea, !drawerIsOpen);
+    } else {
+      sidebar.removeAttribute('aria-hidden');
+      sidebar.removeAttribute('inert');
+      mapArea.removeAttribute('inert');
+      setFocusableState(sidebar, true);
+      setFocusableState(mapArea, true);
+    }
+  }
+
   function openSidebar() {
     appContainer.classList.add('sidebar-open');
+    syncSidebarAccessibility(true);
+    const firstSidebarControl = sidebar.querySelector('button, a');
+    if (firstSidebarControl) {
+      window.requestAnimationFrame(() => firstSidebarControl.focus());
+    }
+    updateMapSize();
   }
-  
-  function closeSidebar() {
+
+  function closeSidebar({ restoreFocus = true } = {}) {
+    const wasOpen = appContainer.classList.contains('sidebar-open');
     appContainer.classList.remove('sidebar-open');
+    syncSidebarAccessibility(false);
+    if (wasOpen && restoreFocus && mobileQuery.matches) {
+      menuToggle.focus();
+    }
+    updateMapSize();
   }
-  
+
   if (menuToggle) {
     menuToggle.addEventListener('click', () => {
       const isOpen = appContainer.classList.contains('sidebar-open');
@@ -274,18 +353,25 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
-  
+
   if (overlay) {
     overlay.addEventListener('click', closeSidebar);
   }
-  
+
   // Handle keyboard escape key to close sidebar
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
+    if (e.key === 'Escape' && appContainer.classList.contains('sidebar-open')) {
       closeSidebar();
     }
   });
-  
+
+  mobileQuery.addEventListener('change', () => {
+    appContainer.classList.remove('sidebar-open');
+    syncSidebarAccessibility(false);
+    updateMapSize();
+  });
+
   // 8. Initial Render
   renderExplorer('all');
+  syncSidebarAccessibility(false);
 });

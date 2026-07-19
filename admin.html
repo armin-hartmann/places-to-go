@@ -5,23 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Admin Portal to add and manage locations for the Old Town Explorer map guide.">
   <title>Admin Portal | Old Town Explorer</title>
-  
+
   <!-- Leaflet.js CSS from CDN -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
-        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" 
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
         crossorigin="" />
-        
+
   <!-- Custom Application Stylesheet -->
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=5">
 </head>
-<body>
+<body class="admin-page">
 
   <!-- Admin Header -->
   <header class="admin-header">
     <h1>Old Town Explorer Admin Portal</h1>
     <div class="admin-header-actions">
       <a href="index.html" class="btn-secondary" id="back-to-explorer">
-        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" alt="Back Icon">
+        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <line x1="19" y1="12" x2="5" y2="12"></line>
           <polyline points="12 19 5 12 12 5"></polyline>
         </svg>
@@ -35,21 +35,21 @@
 
   <!-- Admin Layout Container -->
   <div class="admin-container">
-    
+
     <!-- Left Panel: Form & Listings -->
     <aside class="admin-sidebar">
-      
+
       <!-- Add Location Form -->
       <section class="form-section" aria-label="Add Location Form">
         <div class="admin-form-card">
-          <h2 class="form-title">Add New Location</h2>
-          
-          <form id="add-location-form" novalidate>
+          <h2 class="form-title" id="form-title">Add New Location</h2>
+
+          <form id="add-location-form">
             <div class="form-group">
               <label for="loc-name">Location Name</label>
-              <input type="text" id="loc-name" class="form-input" placeholder="e.g. Gadsby's Tavern" required>
+              <input type="text" id="loc-name" class="form-input" placeholder="e.g. Gadsby's Tavern" maxlength="120" required>
             </div>
-            
+
             <div class="form-group">
               <label for="loc-type">Category</label>
               <select id="loc-type" class="form-select" required>
@@ -59,24 +59,27 @@
                 <option value="experience">Historic & Unique</option>
               </select>
             </div>
-            
+
             <div class="form-row">
               <div class="form-group">
                 <label for="loc-lat">Latitude</label>
-                <input type="number" id="loc-lat" class="form-input" step="any" placeholder="38.8045" required>
+                <input type="number" id="loc-lat" class="form-input" step="any" min="-90" max="90" placeholder="38.8045" required>
               </div>
               <div class="form-group">
                 <label for="loc-lng">Longitude</label>
-                <input type="number" id="loc-lng" class="form-input" step="any" placeholder="-77.0425" required>
+                <input type="number" id="loc-lng" class="form-input" step="any" min="-180" max="180" placeholder="-77.0425" required>
               </div>
             </div>
-            
+
             <div class="form-group">
               <label for="loc-desc">Description</label>
-              <textarea id="loc-desc" class="form-textarea" placeholder="Describe the atmosphere, history, or unique offerings..." required></textarea>
+              <textarea id="loc-desc" class="form-textarea" maxlength="600" placeholder="Describe the atmosphere, history, or unique offerings..." required></textarea>
             </div>
-            
-            <button type="submit" class="btn-submit">Save Location</button>
+
+            <div class="form-actions">
+              <button type="submit" id="btn-submit" class="btn-submit">Save Location</button>
+              <button type="button" id="btn-cancel-edit" class="btn-cancel" style="display: none;">Cancel</button>
+            </div>
           </form>
         </div>
       </section>
@@ -99,20 +102,20 @@
           </table>
         </div>
       </section>
-      
+
     </aside>
 
     <!-- Right Panel: Coordinate Selector Map -->
     <main class="admin-map-area" aria-label="Coordinate Picker Map">
       <!-- Helper Overlay Badge -->
       <div class="map-helper-badge">
-        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" alt="Map Pin Icon">
+        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
           <circle cx="12" cy="10" r="3"></circle>
         </svg>
         Click anywhere on the map to set coordinates
       </div>
-      
+
       <!-- Leaflet Map Container -->
       <div id="admin-map" class="admin-map-container"></div>
     </main>
@@ -120,15 +123,15 @@
   </div>
 
   <!-- Leaflet.js from CDN -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" 
-          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" 
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
           crossorigin=""></script>
-          
+
   <!-- Storage utility logic -->
-  <script src="data.js"></script>
-  
+  <script src="data.js?v=5"></script>
+
   <!-- Admin Script -->
-  <script src="admin.js"></script>
+  <script src="admin.js?v=5"></script>
 
 </body>
 </html>
