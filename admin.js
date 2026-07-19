@@ -125,7 +125,7 @@ function initializeAdminApp(user) {
 
   function createCustomIcon(type, isActive = false) {
     const colorVar = `var(--color-${type})`;
-    const pulseHtml = (type === 'experience' || isActive)
+    const pulseHtml = isActive
       ? `<div class="marker-pulse" style="--marker-color: ${colorVar};"></div>`
       : '';
 

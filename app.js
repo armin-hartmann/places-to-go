@@ -68,8 +68,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 2. Custom Marker Icon Creator
   function createMarkerIcon(type, isActive = false) {
     const colorVar = `var(--color-${type})`;
-    // Include a pulse animation only for "experience/unique" locations or when active
-    const pulseHtml = (type === 'experience' || isActive) ? `<div class="marker-pulse" style="--marker-color: ${colorVar};"></div>` : '';
+    // Use motion only to communicate the currently selected location.
+    const pulseHtml = isActive ? `<div class="marker-pulse" style="--marker-color: ${colorVar};"></div>` : '';
 
     return L.divIcon({
       className: `custom-marker ${isActive ? 'active' : ''}`,
