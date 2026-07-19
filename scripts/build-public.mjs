@@ -7,6 +7,8 @@ const outputRoot = join(projectRoot, 'dist', 'pb_public');
 const publicFiles = [
   'index.html',
   'admin.html',
+  'favicon.svg',
+  'apple-touch-icon.png',
   'styles.css',
   'config.js',
   'data.js',
