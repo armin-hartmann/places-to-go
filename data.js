@@ -1,94 +1,21 @@
 /**
- * Old Town Alexandria - Curated Directory Data
- *
- * Contains default seed data and utility functions to read/write state to browser localStorage.
+ * PocketBase client and location data service for Old Town Explorer.
  */
-const OLD_TOWN_LOCATIONS = [
-  {
-    id: "virtue-feed-grain",
-    name: "Virtue Feed & Grain",
-    type: "food",
-    lat: 38.8042,
-    lng: -77.0406,
-    desc: "A lively, modern American tavern housed in a historic 1800s feed house."
-  },
-  {
-    id: "captain-gregorys",
-    name: "Captain Gregory's",
-    type: "bar",
-    lat: 38.8092,
-    lng: -77.0468,
-    desc: "An intimate, hidden cocktail speakeasy tucked away behind a secret door."
-  },
-  {
-    id: "barca-pier-wine-bar",
-    name: "BARCA Pier & Wine Bar",
-    type: "bar",
-    lat: 38.8015,
-    lng: -77.0401,
-    desc: "Built on a shipping pier over the Potomac River. Perfect for outdoor Spanish tapas."
-  },
-  {
-    id: "torpedo-factory-art-center",
-    name: "Torpedo Factory Art Center",
-    type: "experience",
-    lat: 38.8048,
-    lng: -77.0398,
-    desc: "A former WWII munitions factory transformed into three floors of open artist studios."
-  },
-  {
-    id: "stabler-leadbeater-apothecary-museum",
-    name: "Stabler-Leadbeater Apothecary Museum",
-    type: "experience",
-    lat: 38.8046,
-    lng: -77.0441,
-    desc: "A perfectly preserved 19th-century pharmacy featuring historic medicine bottles."
-  }
-];
-
-const STORAGE_KEY = 'old_town_explorer_places';
-const STORAGE_BACKUP_KEY = `${STORAGE_KEY}_recovery`;
-const STORAGE_VERSION = 2;
 const LOCATION_TYPES = new Set(['food', 'bar', 'experience']);
 const LOCATION_LIMITS = Object.freeze({
-  id: 100,
   name: 120,
   description: 600
 });
+const AUTHORIZED_ROLES = new Set(['editor', 'admin']);
 
-function cloneLocations(list) {
-  return list.map(location => ({ ...location }));
-}
+const pocketBaseUrl = window.OLD_TOWN_CONFIG?.pocketBaseUrl || window.location.origin;
+const pocketBaseClient = new PocketBase(pocketBaseUrl);
 
-function createLocationId() {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID();
-  }
-  return `place-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-}
-
-function createLegacyLocationId(location, index) {
-  const slug = typeof location.name === 'string'
-    ? location.name
-      .trim()
-      .toLowerCase()
-      .normalize('NFKD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '')
-      .slice(0, 72)
-    : '';
-  return `legacy-${slug || 'place'}-${index + 1}`;
-}
-
-function normalizeLocation(location, fallbackId) {
+function normalizeLocationInput(location) {
   if (!location || typeof location !== 'object' || Array.isArray(location)) {
     throw new Error("Each location must be an object.");
   }
 
-  const id = typeof location.id === 'string' && location.id.trim()
-    ? location.id.trim()
-    : fallbackId;
   const name = typeof location.name === 'string' ? location.name.trim() : '';
   const type = typeof location.type === 'string' ? location.type.trim() : '';
   const desc = typeof location.desc === 'string' ? location.desc.trim() : '';
@@ -103,9 +30,6 @@ function normalizeLocation(location, fallbackId) {
       ? Number(location.lng)
       : Number.NaN;
 
-  if (!id || id.length > LOCATION_LIMITS.id) {
-    throw new Error("Location ID is missing or invalid.");
-  }
   if (!name || name.length > LOCATION_LIMITS.name) {
     throw new Error(`Location name must be between 1 and ${LOCATION_LIMITS.name} characters.`);
   }
@@ -122,180 +46,159 @@ function normalizeLocation(location, fallbackId) {
     throw new Error("Longitude must be between -180 and 180.");
   }
 
-  return { id, name, type, lat, lng, desc };
+  return {
+    name,
+    type,
+    lat,
+    lng,
+    desc,
+    published: location.published !== false,
+    sortOrder: Number.isFinite(Number(location.sortOrder))
+      ? Number(location.sortOrder)
+      : Date.now()
+  };
 }
 
-function validateLocationList(list, { migrateLegacy = false } = {}) {
-  if (!Array.isArray(list)) {
-    throw new Error("Stored locations must be an array.");
-  }
-
-  const normalized = list.map((location, index) => normalizeLocation(
-    location,
-    migrateLegacy ? createLegacyLocationId(location, index) : undefined
-  ));
-  const ids = new Set();
-  const names = new Set();
-
-  normalized.forEach(location => {
-    const normalizedName = location.name.toLocaleLowerCase();
-    if (ids.has(location.id)) {
-      throw new Error("Stored locations contain duplicate IDs.");
-    }
-    if (names.has(normalizedName)) {
-      throw new Error("Stored locations contain duplicate names.");
-    }
-    ids.add(location.id);
-    names.add(normalizedName);
-  });
-
-  return normalized;
+function mapPlaceRecord(record) {
+  return {
+    id: record.id,
+    name: record.name,
+    type: record.type,
+    lat: record.location?.lat,
+    lng: record.location?.lon,
+    desc: record.description,
+    published: record.published,
+    sortOrder: record.sortOrder,
+    createdBy: record.createdBy || ''
+  };
 }
 
-function persistLocations(list) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({
-    version: STORAGE_VERSION,
-    locations: list
-  }));
+function locationToRecordData(location, { includeOwner = false } = {}) {
+  const normalized = normalizeLocationInput(location);
+  const data = {
+    name: normalized.name,
+    type: normalized.type,
+    location: {
+      lat: normalized.lat,
+      lon: normalized.lng
+    },
+    description: normalized.desc,
+    published: normalized.published,
+    sortOrder: normalized.sortOrder
+  };
+
+  if (includeOwner && pocketBaseClient.authStore.record?.id) {
+    data.createdBy = pocketBaseClient.authStore.record.id;
+  }
+
+  return data;
 }
 
-function restoreDefaultLocations(error, corruptValue) {
-  if (error) {
-    console.error("Stored location data is invalid; restoring defaults.", error);
+function getPocketBaseErrorMessage(error, fallbackMessage = "The request could not be completed.") {
+  const fieldErrors = error?.response?.data
+    ? Object.values(error.response.data)
+      .map(entry => entry?.message)
+      .filter(Boolean)
+    : [];
+
+  if (fieldErrors.length) {
+    return fieldErrors.join(' ');
   }
-  const defaults = cloneLocations(OLD_TOWN_LOCATIONS);
-  try {
-    if (corruptValue) {
-      localStorage.setItem(STORAGE_BACKUP_KEY, corruptValue);
-    }
-    persistLocations(defaults);
-  } catch (storageError) {
-    console.error("Unable to persist default locations.", storageError);
-  }
-  return defaults;
+
+  return error?.response?.message || error?.message || fallbackMessage;
 }
 
-/**
- * Retrieves the active array of locations.
- * Fallbacks to standard seed data and initializes storage if empty.
- */
-function getStoredLocations() {
-  let stored;
-  try {
-    stored = localStorage.getItem(STORAGE_KEY);
-  } catch (error) {
-    console.error("Unable to read stored locations; using defaults for this session.", error);
-    return cloneLocations(OLD_TOWN_LOCATIONS);
+async function getStoredLocations({ includeDrafts = false } = {}) {
+  const query = {
+    sort: 'sortOrder,name'
+  };
+
+  // Keep the public explorer strictly published even when an editor happens
+  // to have a valid auth session in the same browser.
+  if (!includeDrafts) {
+    query.filter = 'published = true';
   }
 
-  if (!stored) {
-    return restoreDefaultLocations();
-  }
-
-  try {
-    const parsed = JSON.parse(stored);
-
-    // Version 1 stored the location array directly. Migrate it in place.
-    if (Array.isArray(parsed)) {
-      const migrated = validateLocationList(parsed, { migrateLegacy: true });
-      try {
-        persistLocations(migrated);
-      } catch (storageError) {
-        console.error("Unable to persist migrated locations.", storageError);
-      }
-      return cloneLocations(migrated);
-    }
-
-    if (
-      !parsed ||
-      typeof parsed !== 'object' ||
-      parsed.version !== STORAGE_VERSION
-    ) {
-      throw new Error("Unsupported location storage format.");
-    }
-
-    const locations = validateLocationList(parsed.locations);
-    return cloneLocations(locations);
-  } catch (error) {
-    return restoreDefaultLocations(error, stored);
-  }
+  const records = await pocketBaseClient.collection('places').getFullList(query);
+  return records.map(mapPlaceRecord);
 }
 
-/**
- * Saves a list of locations to local storage.
- */
-function saveLocations(list) {
-  const validated = validateLocationList(list);
-  persistLocations(validated);
-  return cloneLocations(validated);
-}
-
-/**
- * Appends a new location to the list.
- */
-function addStoredLocation(location) {
-  const list = getStoredLocations();
-  const normalizedLocation = normalizeLocation(
-    { ...location, id: location && location.id ? location.id : createLocationId() }
+async function addStoredLocation(location) {
+  const record = await pocketBaseClient.collection('places').create(
+    locationToRecordData(location, { includeOwner: true })
   );
-  // Double-check if name already exists
-  if (list.some(l => l.name.toLocaleLowerCase() === normalizedLocation.name.toLocaleLowerCase())) {
-    throw new Error("A location with this name already exists.");
-  }
-  list.push(normalizedLocation);
-  return saveLocations(list);
+  return mapPlaceRecord(record);
 }
 
-/**
- * Deletes a location by stable ID (or by name for legacy callers).
- */
-function deleteStoredLocation(identifier) {
-  const list = getStoredLocations();
-  const filtered = list.filter(location => (
-    location.id !== identifier && location.name !== identifier
-  ));
-  if (filtered.length === list.length) {
+async function deleteStoredLocation(id) {
+  if (!id) {
     throw new Error("Location to delete not found.");
   }
-  return saveLocations(filtered);
+  await pocketBaseClient.collection('places').delete(id);
 }
 
-/**
- * Updates an existing location by stable ID (or by name for legacy callers).
- */
-function updateStoredLocation(identifier, updatedLocation) {
-  const list = getStoredLocations();
-  const index = list.findIndex(location => (
-    location.id === identifier || location.name === identifier
-  ));
-  if (index === -1) {
+async function updateStoredLocation(id, location) {
+  if (!id) {
     throw new Error("Location to update not found.");
   }
-
-  const normalizedLocation = normalizeLocation({
-    ...updatedLocation,
-    id: list[index].id
-  });
-
-  // If the name changed, check if the new name already exists elsewhere
-  if (list[index].name.toLocaleLowerCase() !== normalizedLocation.name.toLocaleLowerCase()) {
-    if (list.some((location, locationIndex) => (
-      locationIndex !== index &&
-      location.name.toLocaleLowerCase() === normalizedLocation.name.toLocaleLowerCase()
-    ))) {
-      throw new Error("A location with this name already exists.");
-    }
-  }
-
-  list[index] = normalizedLocation;
-  return saveLocations(list);
+  const record = await pocketBaseClient.collection('places').update(
+    id,
+    locationToRecordData(location)
+  );
+  return mapPlaceRecord(record);
 }
 
-/**
- * Resets local storage back to defaults.
- */
-function resetStoredLocations() {
-  const defaults = cloneLocations(OLD_TOWN_LOCATIONS);
-  persistLocations(defaults);
-  return defaults;
+function getCurrentUser() {
+  return pocketBaseClient.authStore.record;
+}
+
+function isAuthorizedUser(record = getCurrentUser()) {
+  return Boolean(
+    pocketBaseClient.authStore.isValid &&
+    record &&
+    AUTHORIZED_ROLES.has(record.role)
+  );
+}
+
+function canDeleteLocations(record = getCurrentUser()) {
+  return isAuthorizedUser(record) && record.role === 'admin';
+}
+
+async function refreshAuthenticatedUser() {
+  if (!pocketBaseClient.authStore.isValid) {
+    return null;
+  }
+
+  try {
+    const authData = await pocketBaseClient.collection('users').authRefresh();
+    if (!isAuthorizedUser(authData.record)) {
+      pocketBaseClient.authStore.clear();
+      return null;
+    }
+    return authData.record;
+  } catch (error) {
+    pocketBaseClient.authStore.clear();
+    return null;
+  }
+}
+
+async function authenticateUser(identity, password) {
+  const authData = await pocketBaseClient
+    .collection('users')
+    .authWithPassword(identity, password);
+
+  if (!isAuthorizedUser(authData.record)) {
+    pocketBaseClient.authStore.clear();
+    throw new Error("This account does not have editor access.");
+  }
+
+  return authData.record;
+}
+
+function signOutUser() {
+  pocketBaseClient.authStore.clear();
+}
+
+function subscribeToStoredLocations(callback) {
+  return pocketBaseClient.collection('places').subscribe('*', callback);
 }

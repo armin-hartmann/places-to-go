@@ -1,0 +1,13 @@
+{
+  "name": "old-town-explorer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PocketBase-backed interactive guide to Old Town Alexandria.",
+  "scripts": {
+    "build": "node scripts/build-public.mjs",
+    "check": "node --check app.js && node --check admin.js && node --check data.js && node --check config.js && node --check scripts/build-public.mjs"
+  },
+  "dependencies": {
+    "pocketbase": "0.27.0"
+  }
+}

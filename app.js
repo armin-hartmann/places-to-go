@@ -17,7 +17,7 @@ function escapeHTML(str) {
   );
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   // 1. Initialize Map
   const alexandriaCenter = [38.8045, -77.0425];
   const defaultZoom = 15;
@@ -85,13 +85,28 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 3. Retrieve Active locations from localStorage
+  // 3. Retrieve published locations from PocketBase
   if (typeof getStoredLocations === 'undefined') {
-    console.error("Storage layer not loaded. Please make sure data.js is included before app.js.");
+    console.error("PocketBase data service not loaded. Please make sure data.js is included before app.js.");
     return;
   }
 
-  const activeLocations = getStoredLocations();
+  let activeLocations;
+  try {
+    activeLocations = await getStoredLocations();
+  } catch (error) {
+    const directoryList = document.getElementById('directory-list');
+    directoryList.innerHTML = '';
+    const errorItem = document.createElement('li');
+    errorItem.className = 'directory-status directory-status-error';
+    errorItem.textContent = getPocketBaseErrorMessage(
+      error,
+      "Places are temporarily unavailable. Please try again shortly."
+    );
+    directoryList.appendChild(errorItem);
+    console.error("Failed to load places from PocketBase:", error);
+    return;
+  }
 
   // Pre-create markers and cache them
   activeLocations.forEach(loc => {

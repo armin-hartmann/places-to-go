@@ -12,7 +12,7 @@
         crossorigin="" />
 
   <!-- Custom Application Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=5">
+  <link rel="stylesheet" href="styles.css?v=6">
 </head>
 <body>
 
@@ -67,7 +67,7 @@
       <!-- Directory List Section -->
       <section class="directory-section" aria-label="Directory Directory List">
         <ul id="directory-list" class="directory-list">
-          <!-- Dynamic items injected here via app.js -->
+          <li class="directory-status">Loading places…</li>
         </ul>
       </section>
 
@@ -95,11 +95,15 @@
           integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
           crossorigin=""></script>
 
-  <!-- Location Data Script (Defines OLD_TOWN_LOCATIONS) -->
-  <script src="data.js?v=5"></script>
+  <!-- PocketBase browser client and application configuration -->
+  <script src="vendor/pocketbase.umd.js"></script>
+  <script src="config.js?v=1"></script>
+
+  <!-- PocketBase-backed location data service -->
+  <script src="data.js?v=6"></script>
 
   <!-- Main Application Script -->
-  <script src="app.js?v=5"></script>
+  <script src="app.js?v=6"></script>
 
 </body>
 </html>

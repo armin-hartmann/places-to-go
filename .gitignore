@@ -2,3 +2,8 @@
 .vscode/
 .idea/
 *.log
+dist/
+node_modules/
+pb_data/
+pocketbase
+pocketbase.exe
