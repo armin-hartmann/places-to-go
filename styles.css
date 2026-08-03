@@ -21,6 +21,8 @@
   --color-food: #d97706;        /* Amber/Warm Orange */
   --color-bar: #4f46e5;         /* Indigo/Blue */
   --color-experience: #0d9488;  /* Teal/Emerald */
+  --color-cafe: #db2777;        /* Rose */
+  --color-transportation: #0284c7; /* Sky blue */
   --color-all: #0f172a;         /* Slate/Charcoal */
 
   /* Layout Dimensions */
@@ -155,6 +157,8 @@ body {
 .badge-dot.food { background-color: var(--color-food); }
 .badge-dot.bar { background-color: var(--color-bar); }
 .badge-dot.experience { background-color: var(--color-experience); }
+.badge-dot.cafe { background-color: var(--color-cafe); }
+.badge-dot.transportation { background-color: var(--color-transportation); }
 
 /* Directory Directory Listing */
 .directory-section {

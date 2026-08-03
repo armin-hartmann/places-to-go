@@ -1,7 +1,7 @@
 /**
  * PocketBase client and location data service for Brick & River.
  */
-const LOCATION_TYPES = new Set(['food', 'bar', 'experience']);
+const LOCATION_TYPES = new Set(['food', 'bar', 'experience', 'cafe', 'transportation']);
 const LOCATION_LIMITS = Object.freeze({
   name: 120,
   description: 600

@@ -137,7 +137,9 @@ function initializeAdminApp(user) {
   const categories = {
     food: { label: "Dining", color: "var(--color-food)" },
     bar: { label: "Bar", color: "var(--color-bar)" },
-    experience: { label: "Unique", color: "var(--color-experience)" }
+    experience: { label: "Unique", color: "var(--color-experience)" },
+    cafe: { label: "Cafe", color: "var(--color-cafe)" },
+    transportation: { label: "Transportation & Parking", color: "var(--color-transportation)" }
   };
 
   function getLocationCategories(location) {

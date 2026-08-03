@@ -62,6 +62,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       label: "Unique",
       bg: "#ccfbf1", // Light teal
       text: "#0f766e", // Dark teal
+    },
+    cafe: {
+      label: "Cafe",
+      bg: "#fce7f3", // Light rose
+      text: "#be185d", // Dark rose
+    },
+    transportation: {
+      label: "Transportation & Parking",
+      bg: "#e0f2fe", // Light sky
+      text: "#0369a1", // Dark sky
     }
   };
 
