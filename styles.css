@@ -131,6 +131,8 @@ body {
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
+  justify-content: flex-start;
+  text-align: left;
   gap: 0.4rem;
 }
 
@@ -747,14 +749,16 @@ body {
   color: var(--text-secondary);
 }
 .category-options {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 0.5rem;
 }
 .category-option {
   position: relative;
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  justify-content: flex-start;
+  text-align: left;
   gap: 0.45rem;
   padding: 0.5rem 0.7rem;
   border: 1px solid var(--border-color);
