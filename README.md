@@ -2,6 +2,8 @@
 
 An interactive Old Town Alexandria guide named for the city’s historic brick streets and Potomac waterfront. Public visitors can browse published places; authenticated editors and administrators can manage the PocketBase-backed directory.
 
+> **Production operations:** See [docs/production-operations.md](docs/production-operations.md) for the authoritative deployment, backup, verification, rollback, production-host access, and cache-busting runbook.
+
 ## Local setup
 
 Prerequisites:
