@@ -1202,3 +1202,240 @@ a:focus-visible,
     animation-iteration-count: 1 !important;
   }
 }
+
+/* Place discovery controls */
+.place-search-label {
+  display: block;
+  margin-bottom: 0.4rem;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.place-search {
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.place-search:focus {
+  outline: 3px solid rgba(13, 148, 136, 0.2);
+  border-color: var(--color-experience);
+}
+
+.filter-section .filter-title {
+  margin-top: 1.1rem;
+}
+
+.tag-filters,
+.directory-item-tags,
+.tag-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.tag-filters {
+  margin-top: 0.9rem;
+}
+
+.tag-filter,
+.directory-item-tag,
+.tag-option {
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.tag-filter {
+  padding: 0.4rem 0.65rem;
+  border: 1px solid var(--border-color);
+  background: #fff;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.tag-filter:hover,
+.tag-filter.active {
+  border-color: var(--color-experience);
+  background: #f0fdfa;
+  color: #0f766e;
+}
+
+.directory-item-tags {
+  margin-top: 0.8rem;
+}
+
+.directory-item-tag {
+  padding: 0.2rem 0.5rem;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.tag-option {
+  position: relative;
+  padding: 0.4rem 0.65rem;
+  border: 1px solid var(--border-color);
+  background: #fff;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.tag-option input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  cursor: pointer;
+}
+
+.tag-option:has(input:checked) {
+  border-color: var(--color-experience);
+  background: #f0fdfa;
+  color: #0f766e;
+}
+
+.tag-option:has(input:focus-visible) {
+  outline: 3px solid #f59e0b;
+  outline-offset: 2px;
+}
+
+/* The compact mobile explorer keeps the map visible until a person chooses to browse. */
+@media (max-width: 768px) {
+  .mobile-controls {
+    display: flex;
+    top: auto;
+    bottom: calc(1rem + env(safe-area-inset-bottom));
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .menu-toggle-btn {
+    width: auto;
+    min-height: 48px;
+    padding: 0 1rem;
+    border-radius: 999px;
+    font-weight: 700;
+  }
+
+  .menu-toggle-btn::after {
+    content: 'Explore places';
+    margin-left: 0.45rem;
+    font-size: 0.9rem;
+  }
+
+  .sidebar {
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    max-width: none;
+    height: min(76dvh, 660px);
+    transform: translateY(100%);
+    border: 1px solid var(--border-color);
+    border-bottom: 0;
+    border-radius: 22px 22px 0 0;
+    box-shadow: var(--shadow-premium);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .app-container.sidebar-open .sidebar {
+    transform: translateY(0);
+  }
+
+  .sidebar-header {
+    padding: 1.25rem 1.25rem 1rem;
+  }
+
+  .sidebar-header::before {
+    content: '';
+    display: block;
+    width: 42px;
+    height: 4px;
+    margin: -0.45rem auto 1rem;
+    border-radius: 99px;
+    background: #cbd5e1;
+  }
+
+  .sidebar-header h1 {
+    font-size: 1.35rem;
+  }
+
+  .sidebar-header p {
+    font-size: 0.85rem;
+  }
+
+  .filter-section,
+  .directory-section {
+    padding: 1rem 1.25rem;
+  }
+
+  .filter-section {
+    padding-bottom: 0.75rem;
+  }
+
+  .filter-buttons,
+  .tag-filters {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+    scrollbar-width: none;
+  }
+
+  .filter-buttons::-webkit-scrollbar,
+  .tag-filters::-webkit-scrollbar {
+    display: none;
+  }
+
+  .filter-btn,
+  .tag-filter {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  .filter-btn {
+    justify-content: center;
+    min-height: 40px;
+  }
+
+  .directory-list {
+    gap: 0.75rem;
+  }
+
+  .directory-item {
+    padding: 1rem;
+  }
+
+  .sidebar-footer {
+    display: none;
+  }
+
+  .app-container.sidebar-open .mobile-controls {
+    bottom: calc(min(76dvh, 660px) + 0.75rem + env(safe-area-inset-bottom));
+  }
+
+  .app-container.sidebar-open .menu-toggle-btn::after {
+    content: 'Close';
+  }
+}
+
+.admin-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.35rem;
+}
+
+.admin-tag {
+  padding: 0.15rem 0.4rem;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 0.7rem;
+  font-weight: 600;
+}

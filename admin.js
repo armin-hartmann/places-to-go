@@ -109,6 +109,7 @@ function initializeAdminApp(user) {
   const coordinateHelpText = coordinateHelp.textContent;
   const categoryFieldset = document.querySelector('.category-fieldset');
   const categoryInputs = Array.from(document.querySelectorAll('input[name="loc-category"]'));
+  const tagOptions = document.getElementById('tag-options');
   const categoryHelp = document.getElementById('category-help');
   const categoryHelpText = categoryHelp.textContent;
   const canDelete = canDeleteLocations(user);
@@ -156,6 +157,29 @@ function initializeAdminApp(user) {
       .filter(input => input.checked)
       .map(input => input.value);
   }
+
+  function getSelectedTags() {
+    return Array.from(tagOptions.querySelectorAll('input:checked')).map(input => input.value);
+  }
+
+  function setSelectedTags(tagValues = []) {
+    const selected = new Set(tagValues);
+    tagOptions.querySelectorAll('input').forEach(input => {
+      input.checked = selected.has(input.value);
+    });
+  }
+
+  PLACE_TAGS.forEach(tag => {
+    const label = document.createElement('label');
+    label.className = 'tag-option';
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.value = tag;
+    const text = document.createElement('span');
+    text.textContent = tag;
+    label.append(input, text);
+    tagOptions.appendChild(label);
+  });
 
   function setSelectedCategories(categoryValues) {
     const selected = new Set(categoryValues);
@@ -236,11 +260,15 @@ function initializeAdminApp(user) {
             </span>
           `;
         }).join('');
+        const tagMarkup = (loc.tags || []).map(tag => (
+          `<span class="admin-tag">${escapeHTML(tag)}</span>`
+        )).join('');
 
         tr.innerHTML = `
           <td class="location-name">${escapeHTML(loc.name)}</td>
           <td>
             <span class="table-category-list">${categoryMarkup}</span>
+            ${tagMarkup ? `<span class="admin-tags">${tagMarkup}</span>` : ''}
           </td>
           <td>
             <span class="status-badge ${loc.published ? 'status-published' : 'status-draft'}">
@@ -360,6 +388,7 @@ function initializeAdminApp(user) {
     cancelButton.hidden = false;
     document.getElementById('loc-name').value = loc.name;
     setSelectedCategories(getLocationCategories(loc));
+    setSelectedTags(loc.tags);
     setCategoryFeedback();
     coordinateInput.value = `${loc.lat}, ${loc.lng}`;
     coordinateInput.setCustomValidity('');
@@ -380,6 +409,7 @@ function initializeAdminApp(user) {
     submitButton.textContent = "Save Location";
     cancelButton.hidden = true;
     form.reset();
+    setSelectedTags();
     document.getElementById('loc-published').checked = true;
     setCategoryFeedback();
     coordinateInput.setCustomValidity('');
@@ -444,6 +474,7 @@ function initializeAdminApp(user) {
     event.preventDefault();
     const name = document.getElementById('loc-name').value.trim();
     const selectedCategories = getSelectedCategories();
+    const selectedTags = getSelectedTags();
     const coordinates = parseCoordinatePair(coordinateInput.value);
     const desc = document.getElementById('loc-desc').value.trim();
     const published = document.getElementById('loc-published').checked;
@@ -470,6 +501,7 @@ function initializeAdminApp(user) {
       const location = {
         name,
         categories: selectedCategories,
+        tags: selectedTags,
         lat,
         lng,
         desc,

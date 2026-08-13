@@ -44,10 +44,12 @@
         <p>Named for Old Town’s historic brick streets and Potomac waterfront—a curated guide to local food, drinks, history, and memorable experiences.</p>
       </header>
 
-      <!-- Filtering Section -->
-      <section class="filter-section" aria-label="Directory Filters">
-        <h2 class="filter-title">Filter Experiences</h2>
-        <div class="filter-buttons">
+      <!-- Filtering and search -->
+      <section class="filter-section" aria-label="Directory filters">
+        <label class="place-search-label" for="place-search">Find a place</label>
+        <input id="place-search" class="place-search" type="search" placeholder="Search places, food, or atmosphere" autocomplete="off">
+        <h2 class="filter-title">Browse by category</h2>
+        <div class="filter-buttons" aria-label="Categories">
           <button id="filter-btn-all" class="filter-btn active" data-filter="all" aria-pressed="true">
             <span class="badge-dot all"></span>
             All Experiences
@@ -73,6 +75,7 @@
             Transportation & Parking
           </button>
         </div>
+        <div id="tag-filters" class="tag-filters" aria-label="Popular tags"></div>
       </section>
 
       <!-- Directory List Section -->
