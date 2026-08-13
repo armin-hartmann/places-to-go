@@ -147,15 +147,22 @@ sudo systemctl start old-town-explorer
 
 ## Static assets and browser caching
 
-The HTML files cache-bust JavaScript and CSS using query-string versions, for example:
+`npm run build` automatically adds a short content hash to the CSS and JavaScript
+URLs in the generated `dist/pb_public/index.html` and `admin.html`, for example:
 
 ```html
-<link rel="stylesheet" href="styles.css?v=10">
+<link rel="stylesheet" href="styles.css?v=018faaf1a2c9">
 ```
 
-When changing a cached static file, bump the corresponding version in every HTML page that loads it. Otherwise browsers can render new HTML with old cached CSS or JavaScript. This previously caused new category labels to display without their color-dot styles.
+The hash changes only when that asset changes. This makes browsers request the
+new CSS or JavaScript after a deployment while allowing unchanged files to stay
+cached. The source HTML files may show placeholder `?v=` values; do **not**
+update those values manually. The generated files in `dist/` are deployment
+artifacts and are not committed.
 
-After deployment, use a hard refresh while validating the page. Confirm the loaded stylesheet URL has the new version in browser developer tools.
+After deployment, use a normal refresh while validating the page. If an old
+browser tab still appears stale, do one hard refresh and confirm the loaded
+asset URL has the new hash in browser developer tools.
 
 ## Troubleshooting
 
