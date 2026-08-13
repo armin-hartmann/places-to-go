@@ -468,6 +468,16 @@ body {
   letter-spacing: -0.01em;
 }
 
+.leaflet-popup-content h3 a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.leaflet-popup-content h3 a:hover,
+.leaflet-popup-content h3 a:focus-visible {
+  text-decoration: underline;
+}
+
 .leaflet-popup-content p {
   margin: 0;
 }
