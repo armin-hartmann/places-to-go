@@ -17,6 +17,10 @@ This document is the authoritative runbook for deploying and operating the produ
 | PocketBase migrations | `/opt/old-town-explorer/pb_migrations` |
 | Built public assets | `/opt/old-town-explorer/dist/pb_public` |
 | Local PocketBase listener | `127.0.0.1:8090` |
+| Deployment trigger | GitHub Actions on pushes to `main` |
+| Deployment workflow | `.github/workflows/deploy-production.yml` |
+| Server deployment script | `/usr/local/sbin/deploy-old-town-explorer` |
+| Server-local backups | `/var/backups/old-town-explorer` |
 
 PocketBase serves the built public directory directly. The reverse proxy provides HTTPS for `brickandriver.com` and `www.brickandriver.com`; PocketBase itself is deliberately bound only to localhost.
 
@@ -60,84 +64,86 @@ Expected PocketBase arguments include:
 
 ## Standard production deployment
 
-Use this procedure for application, static-asset, and migration changes.
+Production deploys automatically after a commit is merged or pushed to `main`.
+The GitHub Actions workflow validates the commit, then connects to the production
+VM and runs the restricted server deployment script. Do not manually run `git
+pull`, `npm run build`, or restart the service for an ordinary release.
 
-### 1. Preflight
+### 1. Before merging
 
-From the production VM:
+On the pull request (or locally before pushing), run:
 
 ```bash
-cd /opt/old-town-explorer
-git status --short --branch
-git pull --ff-only origin main
-git log -3 --oneline
-
 npm ci --ignore-scripts
 npm audit --omit=dev
 npm run check
 npm run build
 ```
 
-`npm ci --ignore-scripts` installs exactly what is in `package-lock.json` and avoids lifecycle-script execution. Do not use `npm audit fix --force` on production.
+`npm ci --ignore-scripts` installs exactly what is in `package-lock.json` and
+avoids lifecycle-script execution. Do not use `npm audit fix --force`.
 
-### 2. Create a PocketBase dashboard backup
+For a migration or other data-affecting change, create a PocketBase dashboard
+backup **before merging**:
 
-Before a migration or data-affecting deployment:
+1. Sign into `https://brickandriver.com/_/` as a PocketBase superuser.
+2. Open **Settings → Backups**.
+3. Create a backup and confirm it appears successfully.
+4. Record its timestamp/name with the release notes.
 
-1. Sign into `https://brickandriver.com/_/` as a **PocketBase superuser**.
-2. Navigate to **Settings → Backups**.
-3. Create a backup and wait for it to appear successfully.
-4. Record its timestamp/name in the deployment note.
+### 2. Merge and monitor the automated deployment
 
-### 3. Create a consistent server-local backup and restart
+1. Merge the approved pull request into `main`.
+2. Open the repository's **Actions** tab and select **Deploy production**.
+3. Confirm every step succeeds, especially **Validate the application** and
+   **Deploy the validated commit**.
 
-Stopping PocketBase briefly ensures the SQLite database and any WAL files are archived consistently.
+The workflow passes the exact commit SHA it validated to
+`/usr/local/sbin/deploy-old-town-explorer`. The server script verifies that SHA,
+updates `/opt/old-town-explorer`, installs dependencies, runs the checks and
+build, creates a consistent local backup, restarts PocketBase, and waits up to
+30 seconds for `http://127.0.0.1:8090/api/health` to succeed.
 
-```bash
-set -euo pipefail
+The workflow uses GitHub repository secrets named `PRODUCTION_HOST`,
+`PRODUCTION_USER`, `PRODUCTION_SSH_KEY`, and `PRODUCTION_KNOWN_HOSTS`. Never
+put their values in this repository or in workflow logs.
 
-STAMP=$(date -u +%Y%m%dT%H%M%SZ)
-BACKUP_DIR=/var/backups/old-town-explorer
-BACKUP_FILE="$BACKUP_DIR/pocketbase-$STAMP.tgz"
+### 3. Verify the release
 
-sudo install -d -m 700 "$BACKUP_DIR"
-sudo systemctl stop old-town-explorer
-
-sudo tar \
-  --numeric-owner \
-  -C /var/lib/pocketbase \
-  -czf "$BACKUP_FILE" \
-  .
-
-sudo ls -lh "$BACKUP_FILE"
-sudo systemctl start old-town-explorer
-sudo systemctl is-active old-town-explorer
-curl -fsS http://127.0.0.1:8090/api/health
-```
-
-If the archive command fails after the service stops, restart it immediately:
-
-```bash
-sudo systemctl start old-town-explorer
-```
-
-### 4. Verify the release
-
-On the VM:
-
-```bash
-sudo systemctl status old-town-explorer --no-pager
-curl -fsS http://127.0.0.1:8090/api/health
-```
-
-In a browser, verify:
+After a successful workflow, verify in a browser:
 
 - `https://brickandriver.com/` loads existing published places.
-- `https://brickandriver.com/admin.html` permits the expected administrator/editor actions.
-- Any new filters, labels, or categories appear correctly.
-- For schema changes, create a **draft** test record first and confirm it saves.
+- `https://brickandriver.com/admin.html` permits the expected administrator
+  actions.
+- Any changed filters, labels, categories, or map behavior appear correctly.
+- For schema changes, create a **draft** test record and confirm it saves.
 
-PocketBase automatically applies committed migrations from `pb_migrations/` when the service starts.
+PocketBase automatically applies committed migrations from `pb_migrations/`
+when the service starts.
+
+### Manual recovery deployment
+
+Use this only if GitHub Actions is unavailable or a failed deployment requires
+server-side investigation. First SSH into the **actual production VM** (not
+Cloud Shell), then inspect the failed Actions log before changing anything.
+
+To deploy the current `main` commit through the same safeguarded script:
+
+```bash
+cd /opt/old-town-explorer
+git fetch origin main
+SHA=$(git rev-parse origin/main)
+sudo /usr/local/sbin/deploy-old-town-explorer "$SHA"
+```
+
+The command creates a server-local backup in
+`/var/backups/old-town-explorer`, briefly stops PocketBase so the SQLite data is
+archived consistently, restarts it, and checks its health. If the script fails
+after stopping the service, restore service availability immediately:
+
+```bash
+sudo systemctl start old-town-explorer
+```
 
 ## Static assets and browser caching
 
@@ -161,16 +167,19 @@ sudo journalctl -u old-town-explorer --since '30 minutes ago' --no-pager -n 100
 curl -fsS http://127.0.0.1:8090/api/health
 ```
 
-### Source code updated but public UI is unchanged
+### Deployment succeeded but public UI is unchanged
 
-1. Confirm the production checkout is at the intended commit:
+1. Confirm the **Deploy production** GitHub Actions run deployed the intended
+   commit and completed successfully.
+2. Confirm the production checkout matches that commit:
 
    ```bash
    git -C /opt/old-town-explorer log -3 --oneline
    ```
 
-2. Re-run `npm run build` from `/opt/old-town-explorer`.
 3. Check the browser’s static-asset query-string version and hard-refresh.
+4. If the server-side build needs investigation, use the manual recovery
+   procedure above rather than directly editing build output.
 
 ### Need to roll back
 

@@ -28,6 +28,7 @@ jobs:
       - name: Validate the application
         run: |
           npm ci --ignore-scripts
+          npm audit --omit=dev
           npm run check
           npm run build
 
