@@ -2,6 +2,12 @@
  * PocketBase client and location data service for Brick & River.
  */
 const LOCATION_TYPES = new Set(['food', 'bar', 'experience', 'cafe', 'transportation']);
+const PLACE_TAGS = Object.freeze([
+  'American', 'Brunch', 'Casual', 'Cocktails', 'Coffee', 'Date night',
+  'Family-friendly', 'Historic', 'Italian', 'Japanese', 'Late night',
+  'Outdoor seating', 'Seafood', 'Sushi', 'Waterfront'
+]);
+const PLACE_TAG_SET = new Set(PLACE_TAGS);
 const LOCATION_LIMITS = Object.freeze({
   name: 120,
   description: 600
@@ -28,6 +34,10 @@ function normalizeLocationInput(location) {
     ))
   )];
   const desc = typeof location.desc === 'string' ? location.desc.trim() : '';
+  const tags = [...new Set((Array.isArray(location.tags) ? location.tags : [])
+    .filter(tag => typeof tag === 'string')
+    .map(tag => tag.trim())
+    .filter(tag => PLACE_TAG_SET.has(tag)))];
   const lat = typeof location.lat === 'number'
     ? location.lat
     : typeof location.lat === 'string' && location.lat.trim()
@@ -65,6 +75,7 @@ function normalizeLocationInput(location) {
     lat,
     lng,
     desc,
+    tags,
     published: location.published !== false,
     sortOrder: Number.isFinite(Number(location.sortOrder))
       ? Number(location.sortOrder)
@@ -86,6 +97,7 @@ function mapPlaceRecord(record) {
     lat: record.location?.lat,
     lng: record.location?.lon,
     desc: record.description,
+    tags: Array.isArray(record.tags) ? record.tags : [],
     published: record.published,
     sortOrder: record.sortOrder,
     createdBy: record.createdBy || ''
@@ -102,6 +114,7 @@ function locationToRecordData(location, { includeOwner = false } = {}) {
       lon: normalized.lng
     },
     description: normalized.desc,
+    tags: normalized.tags,
     published: normalized.published,
     sortOrder: normalized.sortOrder
   };

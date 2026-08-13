@@ -179,6 +179,34 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   rebuildMarkerCache();
 
+  function matchesExplorerSearch(location) {
+    const searchText = [location.name, location.desc, ...(location.tags || [])]
+      .join(' ')
+      .toLocaleLowerCase();
+    return !currentSearch || searchText.includes(currentSearch);
+  }
+
+  function renderTagFilters() {
+    const tagFilters = document.getElementById('tag-filters');
+    const tags = [...new Set(activeLocations.flatMap(location => location.tags || []))].sort();
+    tagFilters.innerHTML = '';
+
+    tags.forEach(tag => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'tag-filter';
+      button.textContent = tag;
+      button.setAttribute('aria-pressed', String(activeTag === tag));
+      button.classList.toggle('active', activeTag === tag);
+      button.addEventListener('click', () => {
+        activeTag = activeTag === tag ? '' : tag;
+        renderTagFilters();
+        renderExplorer(currentFilter);
+      });
+      tagFilters.appendChild(button);
+    });
+  }
+
   // 4. Render Directory and Map Markers
   function renderExplorer(filterType = 'all') {
     // Clear active map markers and list
@@ -188,7 +216,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Filter matching data
     const filteredLocations = activeLocations.filter(loc => (
-      filterType === 'all' || getLocationCategories(loc).includes(filterType)
+      (filterType === 'all' || getLocationCategories(loc).includes(filterType)) &&
+      (!activeTag || (loc.tags || []).includes(activeTag)) &&
+      matchesExplorerSearch(loc)
     ));
 
     if (filteredLocations.length === 0) {
@@ -225,12 +255,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         `;
       }).join('');
 
+      const tagBadges = (loc.tags || []).map(tag => (
+        `<span class="directory-item-tag">${escapeHTML(tag)}</span>`
+      )).join('');
+
       item.innerHTML = `
         <div class="directory-item-header">
           <span class="directory-item-title">${escapeHTML(loc.name)}</span>
           <span class="directory-item-badges">${categoryBadges}</span>
         </div>
         <p class="directory-item-desc">${escapeHTML(loc.desc)}</p>
+        ${tagBadges ? `<span class="directory-item-tags">${tagBadges}</span>` : ''}
       `;
 
       // Clicking list item flies to location and opens popup
@@ -291,9 +326,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // 6. Filter Buttons Interaction
+  // 6. Filter, tag, and search interactions
   let currentFilter = 'all';
+  let activeTag = '';
+  let currentSearch = '';
+  const searchInput = document.getElementById('place-search');
   const filterButtons = document.querySelectorAll('.filter-btn');
+
+  searchInput.addEventListener('input', () => {
+    currentSearch = searchInput.value.trim().toLocaleLowerCase();
+    renderExplorer(currentFilter);
+  });
   filterButtons.forEach(btn => {
     btn.addEventListener('click', (e) => {
       // Remove active state
@@ -449,7 +492,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     refreshTimer = window.setTimeout(async () => {
       try {
         activeLocations = await getStoredLocations();
+        if (activeTag && !activeLocations.some(location => (location.tags || []).includes(activeTag))) {
+          activeTag = '';
+        }
         rebuildMarkerCache();
+        renderTagFilters();
         renderExplorer(currentFilter);
       } catch (error) {
         // Keep the currently displayed directory intact if a refresh fails.
@@ -458,6 +505,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }, 150);
   }
 
+  renderTagFilters();
   renderExplorer(currentFilter);
   syncSidebarAccessibility(false);
 
