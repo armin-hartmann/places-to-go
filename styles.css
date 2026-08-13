@@ -1439,3 +1439,77 @@ a:focus-visible,
   font-size: 0.7rem;
   font-weight: 600;
 }
+
+/* Address-first place entry */
+.place-finder-input-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.place-finder-input-row .form-input {
+  flex: 1;
+}
+
+.place-finder-input-row .btn-secondary {
+  flex: 0 0 auto;
+  justify-content: center;
+  min-height: 42px;
+}
+
+.address-results {
+  overflow: hidden;
+  margin-top: 0.25rem;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.address-result {
+  display: block;
+  width: 100%;
+  padding: 0.7rem 0.8rem;
+  border: 0;
+  border-bottom: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+}
+
+.address-result:last-child {
+  border-bottom: 0;
+}
+
+.address-result:hover,
+.address-result:focus-visible {
+  background: #f0fdfa;
+}
+
+.coordinate-details {
+  margin-top: 0.15rem;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.coordinate-details summary {
+  width: fit-content;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.coordinate-input-group {
+  margin-top: 0.75rem;
+}
+
+@media (max-width: 768px) {
+  .place-finder-input-row {
+    flex-direction: column;
+  }
+
+  .place-finder-input-row .btn-secondary {
+    width: 100%;
+  }
+}

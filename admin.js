@@ -107,6 +107,11 @@ function initializeAdminApp(user) {
   const coordinateInput = document.getElementById('loc-coordinates');
   const coordinateHelp = document.getElementById('coordinate-help');
   const coordinateHelpText = coordinateHelp.textContent;
+  const addressInput = document.getElementById('loc-address');
+  const findPlaceButton = document.getElementById('btn-find-place');
+  const addressHelp = document.getElementById('address-help');
+  const addressHelpText = addressHelp.textContent;
+  const addressResults = document.getElementById('address-results');
   const categoryFieldset = document.querySelector('.category-fieldset');
   const categoryInputs = Array.from(document.querySelectorAll('input[name="loc-category"]'));
   const tagOptions = document.getElementById('tag-options');
@@ -343,6 +348,94 @@ function initializeAdminApp(user) {
     coordinateHelp.classList.toggle('form-help-error', state === 'error');
   }
 
+  function setAddressFeedback(message = addressHelpText, state = '') {
+    addressHelp.textContent = message;
+    addressHelp.classList.toggle('form-help-success', state === 'success');
+    addressHelp.classList.toggle('form-help-error', state === 'error');
+  }
+
+  function extractCoordinatesFromMapsLink(value) {
+    const atCoordinates = value.match(/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/);
+    const dataCoordinates = value.match(/!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/);
+    const match = atCoordinates || dataCoordinates;
+    if (!match) return null;
+    return parseCoordinatePair(`${match[1]},${match[2]}`);
+  }
+
+  function showAddressResults(results) {
+    addressResults.innerHTML = '';
+    addressResults.hidden = !results.length;
+
+    results.forEach(result => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'address-result';
+      button.textContent = result.display_name;
+      button.addEventListener('click', () => {
+        const lat = Number(result.lat);
+        const lng = Number(result.lon);
+        addressInput.value = result.display_name;
+        setFormCoordinates(lat, lng);
+        placeOrMovePicker(lat, lng);
+        map.setView([lat, lng], 16, { animate: true });
+        addressResults.hidden = true;
+        setAddressFeedback('Location found. Refine the pin on the map if needed.', 'success');
+      });
+      addressResults.appendChild(button);
+    });
+  }
+
+  async function findPlace() {
+    const query = addressInput.value.trim();
+    if (!query) {
+      setAddressFeedback('Enter an address, a place name, or a Google Maps link.', 'error');
+      addressInput.focus();
+      return;
+    }
+
+    const linkCoordinates = extractCoordinatesFromMapsLink(query);
+    if (linkCoordinates) {
+      setFormCoordinates(linkCoordinates.lat, linkCoordinates.lng);
+      placeOrMovePicker(linkCoordinates.lat, linkCoordinates.lng);
+      map.setView([linkCoordinates.lat, linkCoordinates.lng], 16, { animate: true });
+      addressResults.hidden = true;
+      setAddressFeedback('Coordinates found in the Maps link. Refine the pin if needed.', 'success');
+      return;
+    }
+
+    findPlaceButton.disabled = true;
+    findPlaceButton.textContent = 'Finding…';
+    addressResults.hidden = true;
+    setAddressFeedback('Searching OpenStreetMap…');
+
+    try {
+      const searchQuery = /alexandria|virginia|\bva\b/i.test(query)
+        ? query
+        : `${query}, Alexandria, Virginia`;
+      const url = new URL('https://nominatim.openstreetmap.org/search');
+      url.search = new URLSearchParams({
+        q: searchQuery,
+        format: 'jsonv2',
+        limit: '5',
+        countrycodes: 'us'
+      });
+      const response = await fetch(url, { headers: { Accept: 'application/json' } });
+      if (!response.ok) throw new Error('Address search is temporarily unavailable.');
+      const results = await response.json();
+      if (!results.length) {
+        setAddressFeedback('No matches found. Try a more specific address or use the map.', 'error');
+        return;
+      }
+      showAddressResults(results);
+      setAddressFeedback('Choose the best match below.');
+    } catch (error) {
+      setAddressFeedback(error.message || 'Address search failed. Use the map or coordinates instead.', 'error');
+    } finally {
+      findPlaceButton.disabled = false;
+      findPlaceButton.textContent = 'Find';
+    }
+  }
+
   function setFormCoordinates(lat, lng) {
     coordinateInput.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
     coordinateInput.setCustomValidity('');
@@ -410,6 +503,8 @@ function initializeAdminApp(user) {
     cancelButton.hidden = true;
     form.reset();
     setSelectedTags();
+    addressResults.hidden = true;
+    setAddressFeedback();
     document.getElementById('loc-published').checked = true;
     setCategoryFeedback();
     coordinateInput.setCustomValidity('');
@@ -436,6 +531,14 @@ function initializeAdminApp(user) {
         setCategoryFeedback('Select at least one category.', 'error');
       }
     });
+  });
+
+  findPlaceButton.addEventListener('click', findPlace);
+  addressInput.addEventListener('keydown', event => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      findPlace();
+    }
   });
 
   coordinateInput.addEventListener('input', () => {
