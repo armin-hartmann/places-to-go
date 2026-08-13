@@ -362,6 +362,21 @@ function initializeAdminApp(user) {
     return parseCoordinatePair(`${match[1]},${match[2]}`);
   }
 
+  function applyPlaceDetails(result) {
+    const suggestedName = result.namedetails?.name || result.name || result.display_name.split(',')[0];
+    const suggestedDescription = result.extratags?.description || result.namedetails?.description;
+    const nameInput = document.getElementById('loc-name');
+    const descriptionInput = document.getElementById('loc-desc');
+
+    // Preserve anything the administrator has already written.
+    if (!nameInput.value.trim() && suggestedName) {
+      nameInput.value = suggestedName;
+    }
+    if (!descriptionInput.value.trim() && suggestedDescription) {
+      descriptionInput.value = suggestedDescription;
+    }
+  }
+
   function showAddressResults(results) {
     addressResults.innerHTML = '';
     addressResults.hidden = !results.length;
@@ -375,6 +390,7 @@ function initializeAdminApp(user) {
         const lat = Number(result.lat);
         const lng = Number(result.lon);
         addressInput.value = result.display_name;
+        applyPlaceDetails(result);
         setFormCoordinates(lat, lng);
         placeOrMovePicker(lat, lng);
         map.setView([lat, lng], 16, { animate: true });
@@ -417,7 +433,9 @@ function initializeAdminApp(user) {
         q: searchQuery,
         format: 'jsonv2',
         limit: '5',
-        countrycodes: 'us'
+        countrycodes: 'us',
+        namedetails: '1',
+        extratags: '1'
       });
       const response = await fetch(url, { headers: { Accept: 'application/json' } });
       if (!response.ok) throw new Error('Address search is temporarily unavailable.');
