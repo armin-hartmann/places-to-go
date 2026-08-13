@@ -151,9 +151,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       const locationCategories = getLocationCategories(loc);
       // Generate custom popup content safely escaping user text
       const popupContent = document.createElement('div');
-      const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-        `${loc.lat},${loc.lng}`
-      )}`;
+      const mapsQuery = `${loc.name}, Old Town Alexandria, VA`;
+      const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapsQuery)}`;
       popupContent.innerHTML = `
         <h3><a href="${mapsUrl}" target="_blank" rel="noopener noreferrer">${escapeHTML(loc.name)}</a></h3>
         <p>${escapeHTML(loc.desc)}</p>
