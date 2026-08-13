@@ -133,6 +133,8 @@ function initializeAdminApp(user) {
   const activeMarkersGroup = L.layerGroup().addTo(map);
   let pickerMarker = null;
   let editingLocationId = '';
+  let refreshTimer;
+  let unsubscribeLocations;
 
   const categories = {
     food: { label: "Dining", color: "var(--color-food)" },
@@ -298,6 +300,13 @@ function initializeAdminApp(user) {
         getPocketBaseErrorMessage(error, "Failed to load locations.")
       )}</td></tr>`;
     }
+  }
+
+  function scheduleAdminRefresh() {
+    window.clearTimeout(refreshTimer);
+    refreshTimer = window.setTimeout(() => {
+      refreshAdminView();
+    }, 150);
   }
 
   function setCoordinateFeedback(message = coordinateHelpText, state = '') {
@@ -485,6 +494,22 @@ function initializeAdminApp(user) {
 
   refreshAdminView();
   window.requestAnimationFrame(() => map.invalidateSize({ animate: false }));
+
+  subscribeToStoredLocations(scheduleAdminRefresh)
+    .then(unsubscribe => {
+      unsubscribeLocations = unsubscribe;
+    })
+    .catch(error => {
+      // The admin portal remains usable when a network blocks the realtime stream.
+      console.error("Failed to subscribe to place updates:", error);
+    });
+
+  window.addEventListener('pagehide', () => {
+    window.clearTimeout(refreshTimer);
+    if (unsubscribeLocations) {
+      unsubscribeLocations();
+    }
+  }, { once: true });
 
   if (typeof ResizeObserver !== 'undefined') {
     const mapResizeObserver = new ResizeObserver(() => {

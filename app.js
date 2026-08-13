@@ -143,34 +143,41 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
-  // Pre-create markers and cache them
-  activeLocations.forEach(loc => {
-    const locationCategories = getLocationCategories(loc);
-    // Generate custom popup content safely escaping user text
-    const popupContent = document.createElement('div');
-    popupContent.innerHTML = `
-      <h3>${escapeHTML(loc.name)}</h3>
-      <p>${escapeHTML(loc.desc)}</p>
-    `;
+  function rebuildMarkerCache() {
+    markerGroup.clearLayers();
+    markerCache.clear();
 
-    // Create marker
-    const marker = L.marker([loc.lat, loc.lng], {
-      icon: createMarkerIcon(locationCategories)
-    }).bindPopup(popupContent);
+    activeLocations.forEach(loc => {
+      const locationCategories = getLocationCategories(loc);
+      // Generate custom popup content safely escaping user text
+      const popupContent = document.createElement('div');
+      const mapsQuery = `${loc.name}, Old Town Alexandria, VA`;
+      const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapsQuery)}`;
+      popupContent.innerHTML = `
+        <h3><a href="${mapsUrl}" target="_blank" rel="noopener noreferrer">${escapeHTML(loc.name)}</a></h3>
+        <p>${escapeHTML(loc.desc)}</p>
+      `;
 
-    // Track active state in popup open/close to update marker visual state
-    marker.on('popupopen', () => {
-      marker.setIcon(createMarkerIcon(locationCategories, true));
-      highlightDirectoryItem(loc.id);
+      const marker = L.marker([loc.lat, loc.lng], {
+        icon: createMarkerIcon(locationCategories)
+      }).bindPopup(popupContent);
+
+      // Track active state in popup open/close to update marker visual state
+      marker.on('popupopen', () => {
+        marker.setIcon(createMarkerIcon(locationCategories, true));
+        highlightDirectoryItem(loc.id);
+      });
+
+      marker.on('popupclose', () => {
+        marker.setIcon(createMarkerIcon(locationCategories, false));
+        clearDirectoryItemHighlight(loc.id);
+      });
+
+      markerCache.set(loc.id, marker);
     });
+  }
 
-    marker.on('popupclose', () => {
-      marker.setIcon(createMarkerIcon(locationCategories, false));
-      clearDirectoryItemHighlight(loc.id);
-    });
-
-    markerCache.set(loc.id, marker);
-  });
+  rebuildMarkerCache();
 
   // 4. Render Directory and Map Markers
   function renderExplorer(filterType = 'all') {
@@ -285,6 +292,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // 6. Filter Buttons Interaction
+  let currentFilter = 'all';
   const filterButtons = document.querySelectorAll('.filter-btn');
   filterButtons.forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -298,7 +306,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       btn.setAttribute('aria-pressed', 'true');
 
       const filterValue = btn.dataset.filter;
-      renderExplorer(filterValue);
+      currentFilter = filterValue;
+      renderExplorer(currentFilter);
 
       // Fit bounds if user filters and we have markers (except 'all' which resets to original view)
       if (filterValue !== 'all') {
@@ -431,7 +440,38 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateMapSize();
   });
 
-  // 8. Initial Render
-  renderExplorer('all');
+  // 8. Initial Render and live updates
+  let refreshTimer;
+  let unsubscribeLocations;
+
+  function scheduleExplorerRefresh() {
+    window.clearTimeout(refreshTimer);
+    refreshTimer = window.setTimeout(async () => {
+      try {
+        activeLocations = await getStoredLocations();
+        rebuildMarkerCache();
+        renderExplorer(currentFilter);
+      } catch (error) {
+        // Keep the currently displayed directory intact if a refresh fails.
+        console.error("Failed to refresh places after a realtime update:", error);
+      }
+    }, 150);
+  }
+
+  renderExplorer(currentFilter);
   syncSidebarAccessibility(false);
+
+  try {
+    unsubscribeLocations = await subscribeToStoredLocations(scheduleExplorerRefresh);
+  } catch (error) {
+    // The explorer remains usable when a network blocks the realtime stream.
+    console.error("Failed to subscribe to place updates:", error);
+  }
+
+  window.addEventListener('pagehide', () => {
+    window.clearTimeout(refreshTimer);
+    if (unsubscribeLocations) {
+      unsubscribeLocations();
+    }
+  }, { once: true });
 });
