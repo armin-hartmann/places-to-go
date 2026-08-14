@@ -514,11 +514,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   let sheetDrag;
   let suppressDirectoryClick = false;
 
-  function beginSheetDrag(event) {
+  function beginSheetDrag(event, source) {
     if (!mobileQuery.matches || event.button > 0) return;
 
     sheetDrag = {
       pointerId: event.pointerId,
+      source,
       startY: event.clientY,
       lastY: event.clientY,
       lastTime: event.timeStamp,
@@ -544,13 +545,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   function endSheetDrag(event) {
     if (!sheetDrag || event.pointerId !== sheetDrag.pointerId) return;
 
-    const { offset, lastY, lastTime } = sheetDrag;
+    const { offset, lastY, lastTime, source } = sheetDrag;
     const elapsed = Math.max(1, event.timeStamp - lastTime);
     const velocity = Math.max(0, event.clientY - lastY) / elapsed;
     const closeThreshold = Math.min(170, window.innerHeight * 0.2);
     const shouldClose = offset >= closeThreshold || (offset >= 48 && velocity > 0.7);
 
-    if (offset > 8) suppressDirectoryClick = true;
+    if (source === 'directory' && offset > 8) {
+      suppressDirectoryClick = true;
+      // Some browsers do not dispatch a click after a drag; do not let that
+      // stale suppression block the next real place selection.
+      window.setTimeout(() => {
+        suppressDirectoryClick = false;
+      }, 300);
+    }
     sheetDrag = null;
     sidebar.classList.remove('dragging');
     sidebar.style.transform = '';
@@ -560,9 +568,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  sheetHandle.addEventListener('pointerdown', beginSheetDrag);
+  sheetHandle.addEventListener('pointerdown', event => beginSheetDrag(event, 'handle'));
   directorySection.addEventListener('pointerdown', event => {
-    if (directorySection.scrollTop <= 0) beginSheetDrag(event);
+    if (directorySection.scrollTop <= 0) beginSheetDrag(event, 'directory');
   });
   sidebar.addEventListener('pointermove', moveSheetDrag, { passive: false });
   sidebar.addEventListener('pointerup', endSheetDrag);
