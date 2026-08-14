@@ -293,23 +293,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         ${tagBadges ? `<span class="directory-item-tags">${tagBadges}</span>` : ''}
       `;
 
-      // Clicking list item flies to location and opens popup
+      // Selecting a directory item uses the same marker popup as a map click.
       item.addEventListener('click', () => {
-        if (marker) {
-          // Pan and zoom smoothly
-          map.setView([loc.lat, loc.lng], 16, {
+        if (!marker) return;
+
+        const focusLocation = () => {
+          map.invalidateSize({ animate: false });
+          map.once('moveend', () => marker.openPopup());
+          map.flyTo([loc.lat, loc.lng], 16, {
             animate: true,
             duration: 0.8
           });
+        };
 
-          // Open popup after transition starts/completes
-          setTimeout(() => {
-            marker.openPopup();
-          }, 200);
-
-          // Close drawer on mobile for seamless map focusing
-          closeSidebar();
-        }
+        // On mobile, let the sheet finish closing before Leaflet measures the
+        // map and opens the popup over the selected marker.
+        const isMobile = mobileQuery.matches;
+        closeSidebar();
+        window.setTimeout(focusLocation, isMobile ? 380 : 0);
       });
 
       listItem.appendChild(item);
