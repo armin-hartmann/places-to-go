@@ -298,12 +298,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!marker) return;
 
         const focusLocation = () => {
+          let popupOpened = false;
+          const openPopup = () => {
+            if (popupOpened) return;
+            popupOpened = true;
+            marker.openPopup();
+          };
+
           map.invalidateSize({ animate: false });
-          map.once('moveend', () => marker.openPopup());
+          map.once('moveend', openPopup);
           map.flyTo([loc.lat, loc.lng], 16, {
             animate: true,
             duration: 0.8
           });
+          // Leaflet may not emit moveend if the map is already centered on the
+          // location, so always provide a one-time fallback.
+          window.setTimeout(openPopup, 1000);
         };
 
         // On mobile, let the sheet finish closing before Leaflet measures the
