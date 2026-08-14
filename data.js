@@ -166,7 +166,7 @@ function getPocketBaseErrorMessage(error, fallbackMessage = "The request could n
 
 async function getStoredLocations({ includeDrafts = false } = {}) {
   const query = {
-    sort: 'sortOrder,name'
+    sort: 'name'
   };
 
   // Keep the public explorer strictly published even when an editor happens
