@@ -513,35 +513,47 @@ document.addEventListener('DOMContentLoaded', async () => {
       startY: event.clientY,
       lastY: event.clientY,
       lastTime: event.timeStamp,
-      offset: 0
+      offset: 0,
+      engaged: source === 'handle'
     };
-    sidebar.classList.add('dragging');
-    sidebar.setPointerCapture(event.pointerId);
+
+    // A handle always means drag intent. In the directory, wait until the
+    // finger actually moves down so a normal tap remains a normal click.
+    if (sheetDrag.engaged) {
+      sidebar.classList.add('dragging');
+      sidebar.setPointerCapture(event.pointerId);
+    }
   }
 
   function moveSheetDrag(event) {
     if (!sheetDrag || event.pointerId !== sheetDrag.pointerId) return;
 
     const offset = Math.max(0, event.clientY - sheetDrag.startY);
-    if (offset > 0) {
-      event.preventDefault();
-      sheetDrag.offset = offset;
-      sheetDrag.lastY = event.clientY;
-      sheetDrag.lastTime = event.timeStamp;
-      sidebar.style.transform = `translateY(${offset}px)`;
+    if (!sheetDrag.engaged && offset < 8) return;
+
+    if (!sheetDrag.engaged) {
+      sheetDrag.engaged = true;
+      sidebar.classList.add('dragging');
+      sidebar.setPointerCapture(event.pointerId);
     }
+
+    event.preventDefault();
+    sheetDrag.offset = offset;
+    sheetDrag.lastY = event.clientY;
+    sheetDrag.lastTime = event.timeStamp;
+    sidebar.style.transform = `translateY(${offset}px)`;
   }
 
   function endSheetDrag(event) {
     if (!sheetDrag || event.pointerId !== sheetDrag.pointerId) return;
 
-    const { offset, lastY, lastTime, source } = sheetDrag;
+    const { offset, lastY, lastTime, source, engaged } = sheetDrag;
     const elapsed = Math.max(1, event.timeStamp - lastTime);
     const velocity = Math.max(0, event.clientY - lastY) / elapsed;
     const closeThreshold = Math.min(170, window.innerHeight * 0.2);
-    const shouldClose = offset >= closeThreshold || (offset >= 48 && velocity > 0.7);
+    const shouldClose = engaged && (offset >= closeThreshold || (offset >= 48 && velocity > 0.7));
 
-    if (source === 'directory' && offset > 8) {
+    if (source === 'directory' && engaged && offset > 8) {
       suppressDirectoryClick = true;
       // Some browsers do not dispatch a click after a drag; do not let that
       // stale suppression block the next real place selection.
