@@ -150,12 +150,37 @@ document.addEventListener('DOMContentLoaded', async () => {
     activeLocations.forEach(loc => {
       const locationCategories = getLocationCategories(loc);
       // Generate custom popup content safely escaping user text
-      const popupContent = document.createElement('div');
-      const mapsQuery = `${loc.name}, Old Town Alexandria, VA`;
+      const popupContent = document.createElement('article');
+      popupContent.className = 'place-popup';
+      const mapsQuery = loc.address || `${loc.name}, Old Town Alexandria, VA`;
       const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapsQuery)}`;
+      const categoryLabels = locationCategories.map(category => categories[category].label);
+      const details = [...categoryLabels, ...(loc.tags || [])];
+      const websiteUrl = (() => {
+        try {
+          const url = new URL(loc.website);
+          return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
+        } catch {
+          return '';
+        }
+      })();
+      const externalIcon = `
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3h7v7M21 3l-9 9M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/></svg>
+      `;
+
       popupContent.innerHTML = `
-        <h3><a href="${mapsUrl}" target="_blank" rel="noopener noreferrer">${escapeHTML(loc.name)}</a></h3>
-        <p>${escapeHTML(loc.desc)}</p>
+        <h3>${escapeHTML(loc.name)}</h3>
+        ${details.length ? `<p class="place-popup-meta">${details.map(escapeHTML).join(' · ')}</p>` : ''}
+        <p class="place-popup-description">${escapeHTML(loc.desc)}</p>
+        ${loc.address ? `<p class="place-popup-address">${escapeHTML(loc.address)}</p>` : ''}
+        <div class="place-popup-actions">
+          <a class="place-popup-action place-popup-action-primary" href="${mapsUrl}" target="_blank" rel="noopener noreferrer">
+            Get directions ${externalIcon}
+          </a>
+          ${websiteUrl ? `<a class="place-popup-action" href="${escapeHTML(websiteUrl)}" target="_blank" rel="noopener noreferrer">
+            Visit website ${externalIcon}
+          </a>` : ''}
+        </div>
       `;
 
       const marker = L.marker([loc.lat, loc.lng], {
