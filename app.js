@@ -470,6 +470,74 @@ document.addEventListener('DOMContentLoaded', async () => {
     overlay.addEventListener('click', closeSidebar);
   }
 
+  // The sheet closes with a deliberate downward drag. A list drag only begins
+  // once its scroll position is already at the top, so normal browsing scrolls
+  // never accidentally dismiss the directory.
+  const sheetHandle = sidebar.querySelector('.sidebar-header');
+  const directorySection = document.querySelector('.directory-section');
+  let sheetDrag;
+  let suppressDirectoryClick = false;
+
+  function beginSheetDrag(event) {
+    if (!mobileQuery.matches || event.button > 0) return;
+
+    sheetDrag = {
+      pointerId: event.pointerId,
+      startY: event.clientY,
+      lastY: event.clientY,
+      lastTime: event.timeStamp,
+      offset: 0
+    };
+    sidebar.classList.add('dragging');
+    sidebar.setPointerCapture(event.pointerId);
+  }
+
+  function moveSheetDrag(event) {
+    if (!sheetDrag || event.pointerId !== sheetDrag.pointerId) return;
+
+    const offset = Math.max(0, event.clientY - sheetDrag.startY);
+    if (offset > 0) {
+      event.preventDefault();
+      sheetDrag.offset = offset;
+      sheetDrag.lastY = event.clientY;
+      sheetDrag.lastTime = event.timeStamp;
+      sidebar.style.transform = `translateY(${offset}px)`;
+    }
+  }
+
+  function endSheetDrag(event) {
+    if (!sheetDrag || event.pointerId !== sheetDrag.pointerId) return;
+
+    const { offset, lastY, lastTime } = sheetDrag;
+    const elapsed = Math.max(1, event.timeStamp - lastTime);
+    const velocity = Math.max(0, event.clientY - lastY) / elapsed;
+    const closeThreshold = Math.min(170, window.innerHeight * 0.2);
+    const shouldClose = offset >= closeThreshold || (offset >= 48 && velocity > 0.7);
+
+    if (offset > 8) suppressDirectoryClick = true;
+    sheetDrag = null;
+    sidebar.classList.remove('dragging');
+    sidebar.style.transform = '';
+
+    if (shouldClose) {
+      closeSidebar();
+    }
+  }
+
+  sheetHandle.addEventListener('pointerdown', beginSheetDrag);
+  directorySection.addEventListener('pointerdown', event => {
+    if (directorySection.scrollTop <= 0) beginSheetDrag(event);
+  });
+  sidebar.addEventListener('pointermove', moveSheetDrag, { passive: false });
+  sidebar.addEventListener('pointerup', endSheetDrag);
+  sidebar.addEventListener('pointercancel', endSheetDrag);
+  directorySection.addEventListener('click', event => {
+    if (!suppressDirectoryClick) return;
+    event.preventDefault();
+    event.stopPropagation();
+    suppressDirectoryClick = false;
+  }, true);
+
   // Handle keyboard escape key to close sidebar
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && appContainer.classList.contains('sidebar-open')) {

@@ -1416,22 +1416,17 @@ a:focus-visible,
     display: none;
   }
 
+  /* Dismiss by dragging down or by tapping the exposed map backdrop. */
   .app-container.sidebar-open .mobile-controls {
-    top: calc(0.5rem + env(safe-area-inset-top));
-    right: 0.75rem;
-    bottom: auto;
-    left: auto;
-    transform: none;
+    display: none;
   }
 
-  .app-container.sidebar-open .menu-toggle-btn {
-    min-width: 48px;
-    padding: 0;
-    background: #fff;
+  .sidebar.dragging {
+    transition: none;
   }
 
-  .app-container.sidebar-open .menu-toggle-btn::after {
-    content: 'Close';
+  .sidebar-header {
+    touch-action: none;
   }
 }
 
