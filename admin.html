@@ -102,20 +102,39 @@
               <small class="form-help">Optional labels help people discover the right place.</small>
             </fieldset>
 
-            <div class="form-group">
-              <label for="loc-coordinates">Coordinates</label>
-              <input
-                type="text"
-                id="loc-coordinates"
-                class="form-input"
-                inputmode="decimal"
-                autocomplete="off"
-                spellcheck="false"
-                placeholder="38.80456652599687, -77.05910094842396"
-                aria-describedby="coordinate-help"
-                required>
-              <small id="coordinate-help" class="form-help">Paste latitude, longitude from Google Maps—or click the map.</small>
+            <div class="form-group place-finder-group">
+              <label for="loc-address">Find the place</label>
+              <div class="place-finder-input-row">
+                <input
+                  type="search"
+                  id="loc-address"
+                  class="form-input"
+                  autocomplete="street-address"
+                  spellcheck="false"
+                  placeholder="Address, place name, or pasted Google Maps link">
+                <button id="btn-find-place" class="btn-secondary" type="button">Find</button>
+              </div>
+              <small id="address-help" class="form-help">Searches OpenStreetMap. You can refine the pin on the map.</small>
+              <div id="address-results" class="address-results" hidden aria-live="polite"></div>
             </div>
+
+            <details class="coordinate-details">
+              <summary>Use coordinates instead</summary>
+              <div class="form-group coordinate-input-group">
+                <label for="loc-coordinates">Coordinates</label>
+                <input
+                  type="text"
+                  id="loc-coordinates"
+                  class="form-input"
+                  inputmode="decimal"
+                  autocomplete="off"
+                  spellcheck="false"
+                  placeholder="38.804567, -77.059101"
+                  aria-describedby="coordinate-help"
+                  required>
+                <small id="coordinate-help" class="form-help">Paste latitude, longitude—or click the map.</small>
+              </div>
+            </details>
 
             <div class="form-group">
               <label for="loc-desc">Description</label>
