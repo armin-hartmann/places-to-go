@@ -4,6 +4,27 @@ An interactive Old Town Alexandria guide named for the city’s historic brick s
 
 > **Production operations:** See [docs/production-operations.md](docs/production-operations.md) for the authoritative deployment, backup, verification, rollback, production-host access, and cache-busting runbook.
 
+## Features
+
+### Public explorer
+
+- Browse published places on an interactive map and directory.
+- Search across place names, descriptions, and descriptive tags.
+- Filter by primary category (Dining, Bars, Historic & Unique, Cafes, or Transportation & Parking) and by tags such as `Historic`, `Waterfront`, `Cocktails`, or `Family-friendly`.
+- On mobile, open a map-first place browser, scroll its directory, and drag its handle down to dismiss it.
+- Select a directory item or marker to open the same structured place card, with category/tag details, description, optional address, an external **Get directions** link, and an optional website link.
+
+### Admin portal
+
+Authorized users can create and edit places; administrators can also delete them. A place supports:
+
+- name, description, published/draft status, categories, and optional discovery tags;
+- map position, address/location details, and optional website;
+- address-first entry via OpenStreetMap search, or a pasted Google Maps link containing coordinates;
+- a clickable, draggable map pin for refining the final location.
+
+The app uses OpenStreetMap's Nominatim search service for optional address lookup and does not require a Google Maps API key. Editors should confirm search results and map-pin placement before saving.
+
 ## Local setup
 
 Prerequisites:
@@ -45,7 +66,7 @@ To use a separate PocketBase origin, define `window.OLD_TOWN_CONFIG.pocketBaseUr
 
 ## Data and deployment
 
-- `pb_migrations/` is committed and defines the schema, access rules, indexes, and seed records.
+- `pb_migrations/` is committed and defines the schema, access rules, indexes, seed records, and place fields such as tags, address, and website. PocketBase applies them on startup.
 - `pb_data/` contains the SQLite database and uploaded files. It is ignored by Git and must be stored on a persistent volume.
 - `dist/` and the PocketBase executable are generated/deployment artifacts and are ignored by Git.
 
