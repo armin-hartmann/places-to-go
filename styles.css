@@ -1413,7 +1413,14 @@ a:focus-visible,
   }
 
   .sidebar-footer {
-    display: none;
+    display: flex;
+    flex: 0 0 auto;
+    padding: 0.7rem 1.25rem;
+  }
+
+  .admin-link {
+    justify-content: center;
+    min-height: 36px;
   }
 
   /* Dismiss by dragging down or by tapping the exposed map backdrop. */
