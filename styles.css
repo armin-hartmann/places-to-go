@@ -1580,13 +1580,14 @@ a:focus-visible,
 }
 
 .place-popup-action-primary {
-  border-color: var(--color-experience);
-  background: var(--color-experience);
-  color: #fff;
+  border-color: #d97706;
+  background: #d97706;
+  color: #ffffff !important;
 }
 
 .place-popup-action-primary:hover {
-  background: #0f766e;
+  background: #b45309;
+  color: #ffffff !important;
 }
 
 .place-popup-action svg {
