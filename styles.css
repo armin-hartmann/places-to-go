@@ -1334,7 +1334,7 @@ a:focus-visible,
     left: 0;
     width: 100%;
     max-width: none;
-    height: min(76dvh, 660px);
+    height: min(94dvh, 800px);
     transform: translateY(100%);
     border: 1px solid var(--border-color);
     border-bottom: 0;
@@ -1348,7 +1348,10 @@ a:focus-visible,
   }
 
   .sidebar-header {
-    padding: 1.25rem 1.25rem 1rem;
+    flex: 0 0 24px;
+    min-height: 24px;
+    padding: 0;
+    border-bottom: 0;
   }
 
   .sidebar-header::before {
@@ -1356,17 +1359,15 @@ a:focus-visible,
     display: block;
     width: 42px;
     height: 4px;
-    margin: -0.45rem auto 1rem;
+    margin: 10px auto;
     border-radius: 99px;
     background: #cbd5e1;
   }
 
-  .sidebar-header h1 {
-    font-size: 1.35rem;
-  }
-
+  /* The map is the home screen; the sheet is dedicated to finding a place. */
+  .sidebar-header h1,
   .sidebar-header p {
-    font-size: 0.85rem;
+    display: none;
   }
 
   .filter-section,
@@ -1416,7 +1417,17 @@ a:focus-visible,
   }
 
   .app-container.sidebar-open .mobile-controls {
-    bottom: calc(min(76dvh, 660px) + 0.75rem + env(safe-area-inset-bottom));
+    top: calc(0.5rem + env(safe-area-inset-top));
+    right: 0.75rem;
+    bottom: auto;
+    left: auto;
+    transform: none;
+  }
+
+  .app-container.sidebar-open .menu-toggle-btn {
+    min-width: 48px;
+    padding: 0;
+    background: #fff;
   }
 
   .app-container.sidebar-open .menu-toggle-btn::after {
