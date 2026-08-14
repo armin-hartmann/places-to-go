@@ -10,7 +10,9 @@ const PLACE_TAGS = Object.freeze([
 const PLACE_TAG_SET = new Set(PLACE_TAGS);
 const LOCATION_LIMITS = Object.freeze({
   name: 120,
-  description: 600
+  description: 600,
+  address: 300,
+  website: 300
 });
 const AUTHORIZED_ROLES = new Set(['editor', 'admin']);
 
@@ -34,6 +36,8 @@ function normalizeLocationInput(location) {
     ))
   )];
   const desc = typeof location.desc === 'string' ? location.desc.trim() : '';
+  const address = typeof location.address === 'string' ? location.address.trim() : '';
+  const website = typeof location.website === 'string' ? location.website.trim() : '';
   const tags = [...new Set((Array.isArray(location.tags) ? location.tags : [])
     .filter(tag => typeof tag === 'string')
     .map(tag => tag.trim())
@@ -62,6 +66,20 @@ function normalizeLocationInput(location) {
   if (!desc || desc.length > LOCATION_LIMITS.description) {
     throw new Error(`Description must be between 1 and ${LOCATION_LIMITS.description} characters.`);
   }
+  if (address.length > LOCATION_LIMITS.address) {
+    throw new Error(`Address must be no longer than ${LOCATION_LIMITS.address} characters.`);
+  }
+  if (website.length > LOCATION_LIMITS.website) {
+    throw new Error(`Website must be no longer than ${LOCATION_LIMITS.website} characters.`);
+  }
+  if (website) {
+    try {
+      const url = new URL(website);
+      if (!['http:', 'https:'].includes(url.protocol)) throw new Error();
+    } catch {
+      throw new Error("Website must be a valid http or https URL.");
+    }
+  }
   if (!Number.isFinite(lat) || lat < -90 || lat > 90) {
     throw new Error("Latitude must be between -90 and 90.");
   }
@@ -75,6 +93,8 @@ function normalizeLocationInput(location) {
     lat,
     lng,
     desc,
+    address,
+    website,
     tags,
     published: location.published !== false,
     sortOrder: Number.isFinite(Number(location.sortOrder))
@@ -97,6 +117,8 @@ function mapPlaceRecord(record) {
     lat: record.location?.lat,
     lng: record.location?.lon,
     desc: record.description,
+    address: record.address || '',
+    website: record.website || '',
     tags: Array.isArray(record.tags) ? record.tags : [],
     published: record.published,
     sortOrder: record.sortOrder,
@@ -114,6 +136,8 @@ function locationToRecordData(location, { includeOwner = false } = {}) {
       lon: normalized.lng
     },
     description: normalized.desc,
+    address: normalized.address,
+    website: normalized.website,
     tags: normalized.tags,
     published: normalized.published,
     sortOrder: normalized.sortOrder

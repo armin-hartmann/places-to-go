@@ -150,12 +150,37 @@ document.addEventListener('DOMContentLoaded', async () => {
     activeLocations.forEach(loc => {
       const locationCategories = getLocationCategories(loc);
       // Generate custom popup content safely escaping user text
-      const popupContent = document.createElement('div');
-      const mapsQuery = `${loc.name}, Old Town Alexandria, VA`;
+      const popupContent = document.createElement('article');
+      popupContent.className = 'place-popup';
+      const mapsQuery = loc.address || `${loc.name}, Old Town Alexandria, VA`;
       const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapsQuery)}`;
+      const categoryLabels = locationCategories.map(category => categories[category].label);
+      const details = [...categoryLabels, ...(loc.tags || [])];
+      const websiteUrl = (() => {
+        try {
+          const url = new URL(loc.website);
+          return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
+        } catch {
+          return '';
+        }
+      })();
+      const externalIcon = `
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3h7v7M21 3l-9 9M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/></svg>
+      `;
+
       popupContent.innerHTML = `
-        <h3><a href="${mapsUrl}" target="_blank" rel="noopener noreferrer">${escapeHTML(loc.name)}</a></h3>
-        <p>${escapeHTML(loc.desc)}</p>
+        <h3>${escapeHTML(loc.name)}</h3>
+        ${details.length ? `<p class="place-popup-meta">${details.map(escapeHTML).join(' · ')}</p>` : ''}
+        <p class="place-popup-description">${escapeHTML(loc.desc)}</p>
+        ${loc.address ? `<p class="place-popup-address">${escapeHTML(loc.address)}</p>` : ''}
+        <div class="place-popup-actions">
+          <a class="place-popup-action place-popup-action-primary" href="${mapsUrl}" target="_blank" rel="noopener noreferrer">
+            Get directions ${externalIcon}
+          </a>
+          ${websiteUrl ? `<a class="place-popup-action" href="${escapeHTML(websiteUrl)}" target="_blank" rel="noopener noreferrer">
+            Visit website ${externalIcon}
+          </a>` : ''}
+        </div>
       `;
 
       const marker = L.marker([loc.lat, loc.lng], {
@@ -268,23 +293,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         ${tagBadges ? `<span class="directory-item-tags">${tagBadges}</span>` : ''}
       `;
 
-      // Clicking list item flies to location and opens popup
+      // Selecting a directory item uses the same marker popup as a map click.
       item.addEventListener('click', () => {
-        if (marker) {
-          // Pan and zoom smoothly
-          map.setView([loc.lat, loc.lng], 16, {
+        if (!marker) return;
+
+        const focusLocation = () => {
+          map.invalidateSize({ animate: false });
+          map.once('moveend', () => marker.openPopup());
+          map.flyTo([loc.lat, loc.lng], 16, {
             animate: true,
             duration: 0.8
           });
+        };
 
-          // Open popup after transition starts/completes
-          setTimeout(() => {
-            marker.openPopup();
-          }, 200);
-
-          // Close drawer on mobile for seamless map focusing
-          closeSidebar();
-        }
+        // On mobile, let the sheet finish closing before Leaflet measures the
+        // map and opens the popup over the selected marker.
+        const isMobile = mobileQuery.matches;
+        closeSidebar();
+        window.setTimeout(focusLocation, isMobile ? 380 : 0);
       });
 
       listItem.appendChild(item);
@@ -478,43 +504,63 @@ document.addEventListener('DOMContentLoaded', async () => {
   let sheetDrag;
   let suppressDirectoryClick = false;
 
-  function beginSheetDrag(event) {
+  function beginSheetDrag(event, source) {
     if (!mobileQuery.matches || event.button > 0) return;
 
     sheetDrag = {
       pointerId: event.pointerId,
+      source,
       startY: event.clientY,
       lastY: event.clientY,
       lastTime: event.timeStamp,
-      offset: 0
+      offset: 0,
+      engaged: source === 'handle'
     };
-    sidebar.classList.add('dragging');
-    sidebar.setPointerCapture(event.pointerId);
+
+    // A handle always means drag intent. In the directory, wait until the
+    // finger actually moves down so a normal tap remains a normal click.
+    if (sheetDrag.engaged) {
+      sidebar.classList.add('dragging');
+      sidebar.setPointerCapture(event.pointerId);
+    }
   }
 
   function moveSheetDrag(event) {
     if (!sheetDrag || event.pointerId !== sheetDrag.pointerId) return;
 
     const offset = Math.max(0, event.clientY - sheetDrag.startY);
-    if (offset > 0) {
-      event.preventDefault();
-      sheetDrag.offset = offset;
-      sheetDrag.lastY = event.clientY;
-      sheetDrag.lastTime = event.timeStamp;
-      sidebar.style.transform = `translateY(${offset}px)`;
+    if (!sheetDrag.engaged && offset < 8) return;
+
+    if (!sheetDrag.engaged) {
+      sheetDrag.engaged = true;
+      sidebar.classList.add('dragging');
+      sidebar.setPointerCapture(event.pointerId);
     }
+
+    event.preventDefault();
+    sheetDrag.offset = offset;
+    sheetDrag.lastY = event.clientY;
+    sheetDrag.lastTime = event.timeStamp;
+    sidebar.style.transform = `translateY(${offset}px)`;
   }
 
   function endSheetDrag(event) {
     if (!sheetDrag || event.pointerId !== sheetDrag.pointerId) return;
 
-    const { offset, lastY, lastTime } = sheetDrag;
+    const { offset, lastY, lastTime, source, engaged } = sheetDrag;
     const elapsed = Math.max(1, event.timeStamp - lastTime);
     const velocity = Math.max(0, event.clientY - lastY) / elapsed;
     const closeThreshold = Math.min(170, window.innerHeight * 0.2);
-    const shouldClose = offset >= closeThreshold || (offset >= 48 && velocity > 0.7);
+    const shouldClose = engaged && (offset >= closeThreshold || (offset >= 48 && velocity > 0.7));
 
-    if (offset > 8) suppressDirectoryClick = true;
+    if (source === 'directory' && engaged && offset > 8) {
+      suppressDirectoryClick = true;
+      // Some browsers do not dispatch a click after a drag; do not let that
+      // stale suppression block the next real place selection.
+      window.setTimeout(() => {
+        suppressDirectoryClick = false;
+      }, 300);
+    }
     sheetDrag = null;
     sidebar.classList.remove('dragging');
     sidebar.style.transform = '';
@@ -524,9 +570,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  sheetHandle.addEventListener('pointerdown', beginSheetDrag);
+  sheetHandle.addEventListener('pointerdown', event => beginSheetDrag(event, 'handle'));
   directorySection.addEventListener('pointerdown', event => {
-    if (directorySection.scrollTop <= 0) beginSheetDrag(event);
+    if (directorySection.scrollTop <= 0) beginSheetDrag(event, 'directory');
   });
   sidebar.addEventListener('pointermove', moveSheetDrag, { passive: false });
   sidebar.addEventListener('pointerup', endSheetDrag);

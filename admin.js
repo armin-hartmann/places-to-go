@@ -112,6 +112,8 @@ function initializeAdminApp(user) {
   const addressHelp = document.getElementById('address-help');
   const addressHelpText = addressHelp.textContent;
   const addressResults = document.getElementById('address-results');
+  const addressDetailInput = document.getElementById('loc-address-detail');
+  const websiteInput = document.getElementById('loc-website');
   const categoryFieldset = document.querySelector('.category-fieldset');
   const categoryInputs = Array.from(document.querySelectorAll('input[name="loc-category"]'));
   const tagOptions = document.getElementById('tag-options');
@@ -365,6 +367,7 @@ function initializeAdminApp(user) {
   function applyPlaceDetails(result) {
     const suggestedName = result.namedetails?.name || result.name || result.display_name.split(',')[0];
     const suggestedDescription = result.extratags?.description || result.namedetails?.description;
+    const suggestedWebsite = result.extratags?.website || result.extratags?.['contact:website'];
     const nameInput = document.getElementById('loc-name');
     const descriptionInput = document.getElementById('loc-desc');
 
@@ -374,6 +377,12 @@ function initializeAdminApp(user) {
     }
     if (!descriptionInput.value.trim() && suggestedDescription) {
       descriptionInput.value = suggestedDescription;
+    }
+    if (!addressDetailInput.value.trim()) {
+      addressDetailInput.value = result.display_name;
+    }
+    if (!websiteInput.value.trim() && suggestedWebsite) {
+      websiteInput.value = suggestedWebsite;
     }
   }
 
@@ -506,6 +515,8 @@ function initializeAdminApp(user) {
     coordinateInput.removeAttribute('aria-invalid');
     setCoordinateFeedback();
     document.getElementById('loc-desc').value = loc.desc;
+    addressDetailInput.value = loc.address || '';
+    websiteInput.value = loc.website || '';
     document.getElementById('loc-published').checked = loc.published;
     setStatus('');
     placeOrMovePicker(loc.lat, loc.lng);
@@ -598,6 +609,8 @@ function initializeAdminApp(user) {
     const selectedTags = getSelectedTags();
     const coordinates = parseCoordinatePair(coordinateInput.value);
     const desc = document.getElementById('loc-desc').value.trim();
+    const address = addressDetailInput.value.trim();
+    const website = websiteInput.value.trim();
     const published = document.getElementById('loc-published').checked;
     const wasEditing = Boolean(editingLocationId);
 
@@ -626,6 +639,8 @@ function initializeAdminApp(user) {
         lat,
         lng,
         desc,
+        address,
+        website,
         published
       };
       if (wasEditing) {

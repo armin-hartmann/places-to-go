@@ -1519,3 +1519,83 @@ a:focus-visible,
     width: 100%;
   }
 }
+
+/* Structured place details in map popups */
+.place-popup {
+  min-width: 220px;
+}
+
+.place-popup h3 {
+  padding-right: 1.25rem;
+}
+
+.place-popup-meta {
+  margin-bottom: 0.65rem !important;
+  color: #0f766e !important;
+  font-size: 0.73rem !important;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.place-popup-description {
+  margin-bottom: 0.7rem !important;
+}
+
+.place-popup-address {
+  margin-bottom: 0.8rem !important;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+}
+
+.place-popup-address::before {
+  content: 'Location: ';
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.place-popup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.place-popup-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 34px;
+  padding: 0.42rem 0.65rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.place-popup-action:hover {
+  background: var(--bg-primary);
+}
+
+.place-popup-action-primary {
+  border-color: #d97706;
+  background: #d97706;
+  color: #ffffff !important;
+}
+
+.place-popup-action-primary:hover {
+  background: #b45309;
+  color: #ffffff !important;
+}
+
+.place-popup-action svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
