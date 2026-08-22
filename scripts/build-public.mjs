@@ -8,6 +8,7 @@ const outputRoot = join(projectRoot, 'dist', 'pb_public');
 const htmlFiles = ['index.html', 'admin.html'];
 const cacheBustedAssets = [
   'styles.css',
+  'feedback.mjs',
   'config.js',
   'data.js',
   'app.js',
@@ -37,7 +38,7 @@ const assetVersions = new Map(await Promise.all(cacheBustedAssets.map(async asse
 })));
 
 function addCacheVersions(html) {
-  return html.replace(/(href|src)="(styles\.css|config\.js|data\.js|app\.js|admin\.js|vendor\/pocketbase\.umd\.js)(?:\?v=[^"]*)?"/g,
+  return html.replace(/(href|src)="(styles\.css|feedback\.mjs|config\.js|data\.js|app\.js|admin\.js|vendor\/pocketbase\.umd\.js)(?:\?v=[^"]*)?"/g,
     (match, attribute, asset) => `${attribute}="${asset}?v=${assetVersions.get(asset)}"`
   );
 }

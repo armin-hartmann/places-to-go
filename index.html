@@ -87,6 +87,11 @@
 
       <!-- Sidebar Footer / Admin Portal Link -->
       <footer class="sidebar-footer">
+        <button id="feedback-open" class="feedback-trigger" type="button" aria-haspopup="dialog" aria-controls="feedback-modal">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg><span class="feedback-trigger-label">Leave feedback</span>
+        </button>
         <a id="admin-portal-link" href="admin.html" class="admin-link">
           <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <circle cx="12" cy="12" r="3"></circle>
@@ -104,6 +109,30 @@
 
   </div>
 
+  <!-- Visitor Feedback Modal -->
+  <dialog id="feedback-modal" class="feedback-modal" aria-labelledby="feedback-title">
+    <div class="feedback-modal-header">
+      <h2 id="feedback-title" class="feedback-modal-title">Leave feedback</h2>
+      <button id="feedback-close" class="feedback-close" type="button" aria-label="Close feedback form">
+        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <section class="feedback-section" aria-label="Send feedback">
+      <p class="feedback-privacy">Optional and private: your message goes only to the site team. An email address is optional and used solely to reply to you. We never share or display submissions.</p>
+      <form id="feedback-form" novalidate>
+        <label class="feedback-label" for="feedback-message">Message (required)</label>
+        <textarea id="feedback-message" name="message" class="feedback-input" rows="3" maxlength="2000" required placeholder="What did you think?"></textarea>
+        <label class="feedback-label" for="feedback-email">Email (optional)</label>
+        <input id="feedback-email" name="email" class="feedback-input" type="email" maxlength="320" autocomplete="email" placeholder="you@example.com">
+        <button id="feedback-submit" class="filter-btn feedback-submit" type="submit">Send feedback</button>
+        <p id="feedback-status" class="feedback-status" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+  </dialog>
+
   <!-- Leaflet.js from CDN -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
           integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
@@ -118,6 +147,9 @@
 
   <!-- Main Application Script -->
   <script src="app.js?v=10"></script>
+
+  <!-- Visitor Feedback -->
+  <script type="module" src="feedback.mjs?v=1"></script>
 
 </body>
 </html>

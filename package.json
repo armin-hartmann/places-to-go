@@ -5,7 +5,8 @@
   "description": "PocketBase-backed Brick & River guide to Old Town Alexandria.",
   "scripts": {
     "build": "node scripts/build-public.mjs",
-    "check": "node --check app.js && node --check admin.js && node --check data.js && node --check config.js && node --check scripts/build-public.mjs && node --check pb_migrations/*.js"
+    "test:feedback": "node --test feedback.test.mjs",
+    "check": "node --check app.js && node --check admin.js && node --check data.js && node --check config.js && node --check scripts/build-public.mjs && node --check feedback.mjs && node --check pb_migrations/*.js"
   },
   "dependencies": {
     "pocketbase": "0.27.0"
