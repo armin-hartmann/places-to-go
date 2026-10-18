@@ -15,6 +15,7 @@ This document is the authoritative runbook for deploying and operating the produ
 | PocketBase binary | `/opt/old-town-explorer/pocketbase` |
 | Persistent PocketBase data | `/var/lib/pocketbase` |
 | PocketBase migrations | `/opt/old-town-explorer/pb_migrations` |
+| PocketBase JS hooks | `/opt/old-town-explorer/pb_hooks` |
 | Built public assets | `/opt/old-town-explorer/dist/pb_public` |
 | Local PocketBase listener | `127.0.0.1:8090` |
 | Deployment trigger | GitHub Actions on pushes to `main` |
@@ -59,8 +60,13 @@ Expected PocketBase arguments include:
 ```text
 --dir=/var/lib/pocketbase
 --migrationsDir=/opt/old-town-explorer/pb_migrations
+--hooksDir=/opt/old-town-explorer/pb_hooks
 --publicDir=/opt/old-town-explorer/dist/pb_public
 ```
+
+`--hooksDir` must be passed explicitly. Without it, PocketBase looks for hooks
+next to the data directory (`/var/lib/pb_hooks`), so the committed `pb_hooks/`
+would silently not load.
 
 ## Standard production deployment
 
@@ -160,9 +166,26 @@ cached. The source HTML files may show placeholder `?v=` values; do **not**
 update those values manually. The generated files in `dist/` are deployment
 artifacts and are not committed.
 
-After deployment, use a normal refresh while validating the page. If an old
-browser tab still appears stale, do one hard refresh and confirm the loaded
-asset URL has the new hash in browser developer tools.
+The HTML pages themselves (`/`, `/index.html`, `/admin.html`) are served with
+`Cache-Control: no-cache` by `pb_hooks/cache_headers.pb.js`. Browsers keep a
+copy but revalidate it on every visit (a cheap `304 Not Modified` when nothing
+changed), so a deployment shows up on the next normal page load. Without this
+header, browsers guess a freshness lifetime from `Last-Modified` and can keep
+showing a weeks-old page, with its old asset hashes, long after a deploy.
+
+To confirm the header in production:
+
+```bash
+curl -sSI https://brickandriver.com/ | grep -i cache-control
+```
+
+The expected output is `cache-control: no-cache`. If it is missing, check that
+the service runs with `--hooksDir=/opt/old-town-explorer/pb_hooks` (see
+[Accessing the production host](#accessing-the-production-host)) and that
+PocketBase was restarted after the change.
+
+Browsers that cached a page before this header existed can still show it once
+more; a single hard refresh clears it.
 
 ## Troubleshooting
 
@@ -184,7 +207,9 @@ curl -fsS http://127.0.0.1:8090/api/health
    git -C /opt/old-town-explorer log -3 --oneline
    ```
 
-3. Check the browser’s static-asset query-string version and hard-refresh.
+3. Check that the HTML is served with `Cache-Control: no-cache` (see
+   [Static assets and browser caching](#static-assets-and-browser-caching)),
+   then check the browser’s static-asset query-string version and hard-refresh.
 4. If the server-side build needs investigation, use the manual recovery
    procedure above rather than directly editing build output.
 
@@ -194,6 +219,6 @@ Do not overwrite production data impulsively. First preserve the current state w
 
 ## Repository hygiene
 
-- Commit source, migrations, and documentation; do **not** commit `pb_data/`, the PocketBase binary, build output, secrets, or server-local backups.
+- Commit source, migrations, hooks, and documentation; do **not** commit `pb_data/`, the PocketBase binary, build output, secrets, or server-local backups.
 - Keep `main` deployable: run `npm run check`, `npm audit --omit=dev`, and `npm run build` before pushing.
 - Keep this runbook updated whenever hosting, service names, paths, backup mechanisms, or deployment behavior changes.
