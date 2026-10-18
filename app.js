@@ -25,13 +25,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Create map, disable default zoom controls (we place custom ones)
   const map = L.map('map', {
     zoomControl: false,
+    maxZoom: 19,
     tap: false // Disable tap handler to prevent issues on touch devices
   }).setView(alexandriaCenter, defaultZoom);
 
-  // OpenStreetMap standard tiles (no API key required)
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    maxZoom: 19
+  // OpenFreeMap Liberty vector basemap (no API key required)
+  L.maplibreGL({
+    style: 'https://tiles.openfreemap.org/styles/liberty',
+    attributionControl: {
+      customAttribution: '<a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> &copy; <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'
+    }
   }).addTo(map);
 
   // Add zoom control at top-right
