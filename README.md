@@ -67,6 +67,7 @@ To use a separate PocketBase origin, define `window.OLD_TOWN_CONFIG.pocketBaseUr
 ## Data and deployment
 
 - `pb_migrations/` is committed and defines the schema, access rules, indexes, seed records, and place fields such as tags, address, and website. PocketBase applies them on startup.
+- `pb_hooks/` is committed and holds PocketBase JS hooks, such as the `Cache-Control: no-cache` header on the HTML pages. Start PocketBase with `--hooksDir` pointing at it whenever `--dir` is not the default `pb_data`.
 - `pb_data/` contains the SQLite database and uploaded files. It is ignored by Git and must be stored on a persistent volume.
 - `dist/` and the PocketBase executable are generated/deployment artifacts and are ignored by Git.
 
