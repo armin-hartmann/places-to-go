@@ -127,12 +127,15 @@ function initializeAdminApp(user) {
 
   const map = L.map('admin-map', {
     zoomControl: false,
+    maxZoom: 19,
     tap: false
   }).setView(alexandriaCenter, defaultZoom);
 
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    maxZoom: 19
+  L.maplibreGL({
+    style: 'https://tiles.openfreemap.org/styles/liberty',
+    attributionControl: {
+      customAttribution: '<a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> &copy; <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'
+    }
   }).addTo(map);
 
   L.control.zoom({ position: 'topright' }).addTo(map);
